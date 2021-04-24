@@ -1,0 +1,17 @@
+In this assignment you are expected to add two important new features to your ray tracers:
+
+1) Reflection and Refraction (recursive ray tracing)
+
+2) Acceleration structures
+
+For reflection and refraction, a new material type attribute is introduced. The values can be "mirror", "conductor", and "dielectric". For mirrors, you do *not* apply Fresnel reflection. It is assumed that such surfaces have constant reflectivity (as indicated by the MirrorReflectance element). For both conductors and dielectrics, you *must* apply Fresnel reflection. For conductors you must still use MirrorReflectance to further modulate the reflectivity of different color channels. We do this to induce a sense of color for metal materials. You can see two examples of gold materials in the input files. Finally for dielectrics you must use the "AbsorptionCoefficient" element to attenuate different colors using different amounts. This way we can also induce color for dielectric (e.g. glass) materials. You need to use this coefficient for the "c" parameter in the Beer's Law formula:
+
+L(x) = L(0)exp(-cx)
+
+Here, L(x) is the luminance after a refracted ray travels a distance of x inside the material, L(0) is the luminance at the interface of the material, and c is equal to the "AbsorptionCoefficient". Note that "c" is a triplet to simulate the fact that a material may absorb different colors by different amounts.
+
+You are free to implement whichever acceleration structure you prefer (e.g., grid, kdtree, BVH). But because fast rendering is critical for us, I recommend using BVH, as it appears to be one of the most efficient structures. If you implement it correctly you should be able to render the dragon examples in the order of a few seconds (2-3 seconds at most for the "other_dragon" example, which consists of about 1.8 million triangles).
+
+The other_dragon scene contains a linked PLY file. Being able to render from PLY files is important for us as most advanced models are represented using PLY files. There are several libraries you can use to parse PLY files (the PLY format is simple so you easily write your own parser as well). Over the past years, many students obtained satisfactory results with this library: https://github.com/nmwsharp/happly
+
+For questions, feel free to use the HW2 forum. Late policy is the same as for the previous homework.
