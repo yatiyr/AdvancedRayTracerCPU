@@ -22,7 +22,7 @@ SplittedTriangles BVH::splitMidpoint(const std::vector<Triangle>& triangleList)
         vivec.push_back(vi);
     }
 
-    totalVec += triangleList.size();
+    totalVec /= triangleList.size();
 
         if(xlength >= ylength && xlength >= zlength)
         {
@@ -129,7 +129,7 @@ bool BVH::Intersect(const Ray& ray, IntersectionReport& report, float tmin, floa
             
         }
 
-        return true;
+        return report.d != FLT_MAX;
     }    
 
     bool leftTest  = leftChild ->Intersect(ray, report1, tmin, tmax, intersectionTestEpslion);

@@ -39,6 +39,7 @@ bool Triangle::Intersect(const Ray& ray, IntersectionReport& report, float tmin,
         report.d            = t;
 		report.intersection = ray.origin + t*ray.direction;
         report.normal       = this->normal;
+		report.materialId   = materialId;
         return true;
 	}
 

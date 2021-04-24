@@ -62,9 +62,34 @@ private:
 
     void ClearImage();
 
-    int _workGroupSize = 16;
+    int _workGroupSize = 1;
 
     std::vector<WorkGroup> _workGroups;
+
+
+    // RELATED TO RAY TRACING
+    bool TestWorldIntersection(const Ray& ray,
+                               IntersectionReport& report,
+                               float tmin,
+                               float tmax,
+                               float intersectionTestEpsilon);
+
+    bool ShadowRayIntersection(
+                               float tmin,
+                               float tmax,
+                               float intersectionTestEpsilon,
+                               float shadowRayEpsilon,
+                               const PointLight& light,
+                               const IntersectionReport& report);
+
+
+    glm::vec3 ComputeAmbientComponent(const IntersectionReport& report);
+    glm::vec3 ComputeDiffuseComponent(const IntersectionReport& report, const PointLight& light);
+    glm::vec3 ComputeSpecularComponent(const IntersectionReport& report, const PointLight& light, const Ray& ray);
+
+    glm::vec3 RayTrace(const Ray& ray);
+
+    
 
 public:
 

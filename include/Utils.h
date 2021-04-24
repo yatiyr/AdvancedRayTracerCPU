@@ -284,7 +284,7 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
             triangleList.push_back(tri);
         }
 
-        Mesh m(triangleList, materialId);
+        Mesh m(triangleList, materialId - 1);
         _meshes.push_back(m);
 
         stream.clear();
@@ -321,7 +321,7 @@ inline void SceneReadSpheres(tinyxml2::XMLNode* root, std::vector<Sphere>& _sphe
 
         glm::vec3 centerVertex = _vertexData[centerVertexId - 1];
 
-        Sphere sphere(centerVertex, radius, materialId);
+        Sphere sphere(centerVertex, radius, materialId - 1);
         _spheres.push_back(sphere);
         element = element->NextSiblingElement("Sphere");
     }
@@ -352,7 +352,7 @@ inline void SceneReadTriangles(tinyxml2::XMLNode* root, std::vector<Triangle>& _
         glm::vec3 c = _vertexData[indices.c - 1];
 
         Triangle tri(a, b, c);
-        tri.materialId = materialId;
+        tri.materialId = materialId - 1;
 
         _triangles.push_back(tri);
         element = element->NextSiblingElement("Triangle");

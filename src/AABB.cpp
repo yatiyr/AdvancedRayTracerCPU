@@ -120,6 +120,27 @@ AABB::AABB(const std::vector<Triangle>& triangleList)
 
 bool AABB::Intersect(const Ray& r, float tmin, float tmax)
 {
+
+    float t1 = (xmin - r.origin.x)*r.rcp.x;
+	float t2 = (xmax - r.origin.x)*r.rcp.x;
+
+	float tMin = std::min(t1, t2);
+	float tMax = std::max(t1, t2);
+
+	t1 = (ymin - r.origin.y)*r.rcp.y;
+	t2 = (ymax - r.origin.y)*r.rcp.y;
+
+	tMin = std::max(tMin, std::min(t1, t2));
+	tMax = std::min(tMax, std::max(t1, t2));
+
+	t1 = (zmin - r.origin.z)*r.rcp.z;
+	t2 = (zmax - r.origin.z)*r.rcp.z;
+
+	tMin = std::max(tMin, std::min(t1, t2));
+	tMax = std::min(tMax, std::max(t1, t2));	
+
+	return tmax > std::max(tMin, 0.0f);
+    /*
     float t1x = glm::clamp((xmin - r.origin.x) / r.direction.x, tmin, tmax);
     float t2x = glm::clamp((xmax - r.origin.x) / r.direction.x, tmin, tmax);
 
@@ -178,5 +199,5 @@ bool AABB::Intersect(const Ray& r, float tmin, float tmax)
 	else
 	{
 		return false;
-	}    
+	}    */
 }

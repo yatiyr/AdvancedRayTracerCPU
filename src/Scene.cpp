@@ -83,7 +83,7 @@ void Scene::ProcessWorkGroup(WorkGroup wg)
     {
         glm::vec2 coords = GiveCoords(i, _imageWidth);
         Ray pR = ComputePrimaryRay(coords.x, coords.y);
-        glm::vec3 pixel(0.5, 0.0, 0.7);
+        glm::vec3 pixel = RayTrace(pR);
         WritePixelCoord(coords.x, coords.y, pixel);
     }
 }
@@ -94,7 +94,7 @@ float* Scene::GetImage()
     PopulateWorkGroups();
 
     double start = omp_get_wtime();
-    #pragma omp parallel for num_threads(16)
+    #pragma omp parallel for num_threads(1)
     for(int i=0; i<_workGroupSize; i++)
     {
         ProcessWorkGroup(_workGroups[i]);
@@ -142,4 +142,147 @@ Ray Scene::ComputePrimaryRay(int i, int j)
     r.direction = glm::normalize((q + su*_activeCamera.v - sv*_activeCamera.up) - r.origin);
 
     return r;    
+}
+
+
+bool Scene::TestWorldIntersection(const Ray& ray, IntersectionReport& report, float tmin, float tmax, float intersectionTestEpsilon)
+{
+    report.d = FLT_MAX;
+    bool result = false;
+
+    for(size_t i=0; i< _meshes.size(); i++)
+    {
+        IntersectionReport r;
+        if(ray.direction.x == -0.386324555f && ray.direction.y == -0.386324555f && ray.direction.z == -0.837559998f)
+            int eren = 0;
+        if(_meshes[i].Intersect(ray, r, tmin, tmax, intersectionTestEpsilon))
+        {
+            result = true;
+            report = r.d < report.d ? r : report;
+        }
+    }
+
+    for(size_t i=0; i < _triangles.size(); i++)
+    {
+        IntersectionReport r;
+        if(_triangles[i].Intersect(ray, r, tmin, tmax, intersectionTestEpsilon))
+        {
+            result = true;
+            report = r.d < report.d ? r : report;
+        }
+    }
+
+    for(size_t i=0; i<_spheres.size(); i++)
+    {
+        IntersectionReport r;
+        if(_spheres[i].Intersect(ray, r, tmin, tmax))
+        {
+            result = true;
+            report = r.d < report.d ? r : report;
+        }
+    }
+
+
+    return result;
+}
+
+bool Scene::ShadowRayIntersection(float tmin, float tmax, float intersectionTestEpsilon, float shadowRayEpsilon, const PointLight& light, const IntersectionReport& report)
+{
+
+    Ray ray;
+
+    ray.direction = glm::normalize(light.position - report.intersection);
+    ray.origin    = report.intersection + shadowRayEpsilon*report.normal;
+
+    float dist = glm::length(light.position - report.intersection);
+
+
+    for(size_t i=0; i<_meshes.size(); i++)
+    {
+        IntersectionReport r;
+        if(_meshes[i].Intersect(ray, r, tmin, tmax, intersectionTestEpsilon) && r.d < dist)
+            return true;
+
+    }
+
+
+    for(size_t i=0; i<_triangles.size(); i++)
+    {
+        IntersectionReport r;
+        if(_triangles[i].Intersect(ray, r, tmin, tmax, intersectionTestEpsilon) && r.d < dist)
+            return true;
+    }
+
+    for(size_t i=0; i<_spheres.size(); i++)
+    {
+        IntersectionReport r;
+        if(_spheres[i].Intersect(ray, r, tmin, tmax) && r.d < dist)
+            return true;
+    }
+
+    return false;
+}
+
+
+glm::vec3 Scene::ComputeAmbientComponent(const IntersectionReport& report)
+{
+    int materialId = report.materialId;
+    if(materialId != 0 && materialId != 1 && materialId != 2 && materialId != 3 && materialId != 4 && materialId != 5 )
+        int eren = 0;
+    return _ambientLight * _materials[report.materialId].ambientReflectance;
+}
+
+glm::vec3 Scene::ComputeDiffuseComponent(const IntersectionReport& report, const PointLight& light)
+{
+    glm::vec3 result = glm::vec3(0.0);
+
+    float lightDistance = glm::length(light.position - report.intersection);
+    glm::vec3 wi = glm::normalize(light.position - report.intersection);
+    result += _materials[report.materialId].diffuseReflectance *
+              std::max(0.0f, glm::dot(wi, report.normal)) *
+              (light.intensity / (lightDistance * lightDistance));
+    return result;
+}
+
+glm::vec3 Scene::ComputeSpecularComponent(const IntersectionReport& report, const PointLight& light, const Ray& ray)
+{
+    glm::vec3 result = glm::vec3(0.0);
+
+    float lightDistance = glm::length(light.position - report.intersection);
+    glm::vec3 wi = glm::normalize(light.position - report.intersection);
+    glm::vec3 h  = glm::normalize(wi - ray.direction);
+
+    result += _materials[report.materialId].specularReflectance *
+              std::pow(std::max(0.0f, glm::dot(report.normal, h)), _materials[report.materialId].phongExponent) *
+              (light.intensity / (lightDistance * lightDistance));
+
+    return result;
+}
+
+
+glm::vec3 Scene::RayTrace(const Ray& ray)
+{
+    glm::vec3 pixel(0.0);
+    IntersectionReport r;
+
+    if(TestWorldIntersection(ray, r, 0, 2000, _intersectionTestEpsilon))
+    {
+        pixel += ComputeAmbientComponent(r);
+        
+        for(size_t i=0; i<_pointLights.size(); i++)
+        {
+            if(ShadowRayIntersection(0, 2000, _intersectionTestEpsilon, _shadowRayEpsilon, _pointLights[i], r))
+            {
+                continue;
+            }
+            else
+            {
+                pixel += ComputeDiffuseComponent(r, _pointLights[i]) + ComputeSpecularComponent(r, _pointLights[i], ray);
+            }
+        }
+    }
+
+    return glm::clamp(pixel, glm::vec3(0.0f), glm::vec3(1.0f));
+
+
 }

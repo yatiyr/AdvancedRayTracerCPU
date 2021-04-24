@@ -11,5 +11,12 @@ Mesh::Mesh(const std::vector<Triangle>& triangleList, size_t materialId)
 
 bool Mesh::Intersect(const Ray& ray, IntersectionReport& report, float tmin, float tmax, float intersectionEpsilon)
 {
-    return bvhRoot->Intersect(ray, report, tmin, tmax, intersectionEpsilon);
+    bool test = bvhRoot->Intersect(ray, report, tmin, tmax, intersectionEpsilon);
+
+    report.materialId = materialId;
+
+    if(test == true)
+        int eren = 0;
+
+    return test;
 }
