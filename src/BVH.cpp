@@ -72,7 +72,7 @@ SplittedTriangles BVH::splitMidpoint(const std::vector<Triangle>& triangleList)
 
 BVH::BVH(const std::vector<Triangle>& triangleList, int depth, int maxdepth) : box(triangleList)
 {
-    if(depth == maxdepth || triangleList.size() <= 16)
+    if(depth == maxdepth || triangleList.size() <= 4)
     {
         for(size_t i=0; i<triangleList.size(); i++)
         {

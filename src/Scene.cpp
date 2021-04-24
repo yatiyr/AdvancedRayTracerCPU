@@ -94,7 +94,7 @@ float* Scene::GetImage()
     PopulateWorkGroups();
 
     double start = omp_get_wtime();
-    #pragma omp parallel for num_threads(1)
+    #pragma omp parallel for num_threads(32)
     for(int i=0; i<_workGroupSize; i++)
     {
         ProcessWorkGroup(_workGroups[i]);
@@ -140,6 +140,7 @@ Ray Scene::ComputePrimaryRay(int i, int j)
     float sv = (i + 0.5) * (_activeCamera.nearPlane.w - _activeCamera.nearPlane.z) / _activeCamera.imageResolution.y;
 
     r.direction = glm::normalize((q + su*_activeCamera.v - sv*_activeCamera.up) - r.origin);
+    r.rcp = 1.f / r.direction;
 
     return r;    
 }
@@ -193,6 +194,7 @@ bool Scene::ShadowRayIntersection(float tmin, float tmax, float intersectionTest
 
     ray.direction = glm::normalize(light.position - report.intersection);
     ray.origin    = report.intersection + shadowRayEpsilon*report.normal;
+    ray.rcp = 1.f / ray.direction;
 
     float dist = glm::length(light.position - report.intersection);
 

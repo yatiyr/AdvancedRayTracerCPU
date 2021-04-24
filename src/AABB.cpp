@@ -139,7 +139,7 @@ bool AABB::Intersect(const Ray& r, float tmin, float tmax)
 	tMin = std::max(tMin, std::min(t1, t2));
 	tMax = std::min(tMax, std::max(t1, t2));	
 
-	return tmax > std::max(tMin, 0.0f);
+	return tMax >= std::max(tMin, 0.0f);
     /*
     float t1x = glm::clamp((xmin - r.origin.x) / r.direction.x, tmin, tmax);
     float t2x = glm::clamp((xmax - r.origin.x) / r.direction.x, tmin, tmax);

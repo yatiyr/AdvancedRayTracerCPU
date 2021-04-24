@@ -62,7 +62,7 @@ private:
 
     void ClearImage();
 
-    int _workGroupSize = 1;
+    int _workGroupSize = 32;
 
     std::vector<WorkGroup> _workGroups;
 

@@ -9,7 +9,7 @@
 int main(int argc, char** argv)
 {
     
-    Renderer RnDr("assets/scenes/hw1/bunny.xml");
+    Renderer RnDr("assets/scenes/hw2/chinese_dragon.xml");
 
     try
     {    
