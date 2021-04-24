@@ -16,7 +16,13 @@
 #include <Sphere.h>
 #include <Triangle.h>
 #include <Mesh.h>
+#include <omp.h>
 
+struct WorkGroup
+{
+    int start;
+    int end;
+};
 
 class Scene
 {
@@ -42,29 +48,36 @@ private:
     float _intersectionTestEpsilon;    
     int _maxRecursionDepth;
 
-    Camera                 _activeCamera;
+
+    Camera _activeCamera; 
     std::vector<std::string> imageNames;
-    std::string _imageName;
+    float* _image;
 
-    void ReadConstants();
-    void ReadCameras();
-    void ReadLights();
-    void ReadMaterials();
-    void ReadVertexData();
-    void ReadObjects();
+    std::vector<Ray> _primaryRayPool;
 
-    void ReadMeshes();
-    void ReadSpheres();
-    void ReadTriangles();
+    void PopulateWorkGroups();
+    void ProcessWorkGroup(WorkGroup wg);
 
+    Ray ComputePrimaryRay(int i, int j);
 
+    void ClearImage();
+
+    int _workGroupSize = 16;
+
+    std::vector<WorkGroup> _workGroups;
 
 public:
 
+    int _imageWidth;
+    int _imageHeight;
+    std::string _imageName;   
     Scene(const std::string& filepath);
     ~Scene();
 
+    glm::vec2 GiveCoords(int index, int width);
+
     float* GetImage();
+    void WritePixelCoord(int i, int j, const glm::vec3& color);
 };
 
 

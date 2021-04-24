@@ -4,16 +4,16 @@
 #include <omp.h>
 
 #include <cmath>
-#include <Sphere.h>
+#include <Renderer.h>
 
 int main(int argc, char** argv)
 {
     
-    //Renderer RnDr("assets/scenes/hw1/cornellbox.xml", RenderingMode::CPU_RENDERING_BIT);
+    Renderer RnDr("assets/scenes/hw1/bunny.xml");
 
     try
     {    
-      //  RnDr.CPURender();
+      RnDr.Render();
     }
     catch(const std::exception& e)
     {
