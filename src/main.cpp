@@ -1,8 +1,4 @@
 #include <iostream>
-//#include <Renderer.h>
-#include <Timer.h>
-#include <omp.h>
-
 #include <cmath>
 #include <Renderer.h>
 

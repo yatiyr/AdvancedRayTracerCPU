@@ -7,6 +7,7 @@
 #include <array>
 #include <algorithm>
 #include <list>
+#include <stack>
 
 struct Camera
 {
@@ -55,6 +56,7 @@ struct Ray
     alignas(16) glm::vec3 origin;
     alignas(16) glm::vec3 direction;
     alignas(16) glm::vec3 rcp;
+    std::stack<float> mediumStack;
 };
 
 

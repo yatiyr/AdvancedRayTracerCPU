@@ -13,8 +13,5 @@ bool Mesh::Intersect(const Ray& ray, IntersectionReport& report, float tmin, flo
 
     report.materialId = materialId;
 
-    if(test == true)
-        int eren = 0;
-
     return test;
 }

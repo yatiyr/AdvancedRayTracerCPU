@@ -72,8 +72,9 @@ SplittedTriangles BVH::splitMidpoint(const std::vector<Triangle>& triangleList)
 
 BVH::BVH(const std::vector<Triangle>& triangleList, int depth, int maxdepth) : box(triangleList)
 {
-    if(depth == maxdepth || triangleList.size() <= 4)
+    if(depth == maxdepth || triangleList.size() <= 16)
     {
+
         for(size_t i=0; i<triangleList.size(); i++)
         {
             this->primitives.push_back(triangleList[i]);
@@ -107,7 +108,7 @@ BVH::BVH(const std::vector<Triangle>& triangleList, int depth, int maxdepth) : b
 
 bool BVH::Intersect(const Ray& ray, IntersectionReport& report, float tmin, float tmax, float intersectionTestEpslion)
 {
-    bool boxTest = box.Intersect(ray, tmin, tmax);
+    bool boxTest = box.Intersect(ray);
 
     if(!boxTest)
         return false;

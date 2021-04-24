@@ -118,7 +118,7 @@ AABB::AABB(const std::vector<Triangle>& triangleList)
 
 }
 
-bool AABB::Intersect(const Ray& r, float tmin, float tmax)
+bool AABB::Intersect(const Ray& r)
 {
 
     float t1 = (xmin - r.origin.x)*r.rcp.x;
@@ -140,64 +140,4 @@ bool AABB::Intersect(const Ray& r, float tmin, float tmax)
 	tMax = std::min(tMax, std::max(t1, t2));	
 
 	return tMax >= std::max(tMin, 0.0f);
-    /*
-    float t1x = glm::clamp((xmin - r.origin.x) / r.direction.x, tmin, tmax);
-    float t2x = glm::clamp((xmax - r.origin.x) / r.direction.x, tmin, tmax);
-
-	if(t1x > t2x)
-	{
-		float tmp = t1x;
-		t1x = t2x;
-		t2x = tmp;
-	}
-
-    float t1y = glm::clamp((ymin - r.origin.x) / r.direction.y, tmin, tmax);
-    float t2y = glm::clamp((ymax - r.origin.x) / r.direction.y, tmin, tmax);
-
-	if(t1y > t2y)
-	{
-		float tmp = t1y;
-		t1y = t2y;
-		t2y = tmp;
-	}
-
-	float t1z = glm::clamp((zmin - r.origin.z) / r.direction.z, tmin, tmax);
-	float t2z = glm::clamp((zmax - r.origin.z) / r.direction.z, tmin, tmax); 
-
-	if(t1z > t2z)
-	{
-		float tmp = t1z;
-		t1z = t2z;
-		t2z = tmp;
-	}
-
-	float t1max = t1x;
-	float t2min = t2x;
-
-	if(t1max < t1y)
-		t1max = t1y;
-	if(t1max < t1z)
-		t1max = t1z;
-
-	if(t2min > t2y)
-		t2min = t2y;
-	if(t2min > t2z)
-		t2min = t2z;
-
-	if(t1max > t2min)
-	{	
-		return false;
-	}
-	else if(t1max < t2min)
-	{
-		return true;
-	}
-	else if(t1max == t2min)
-	{
-		return true;
-	}
-	else
-	{
-		return false;
-	}    */
 }

@@ -18,6 +18,8 @@ public:
     Triangle(glm::vec3 a, glm::vec3 b, glm::vec3 c);
     //Triangle(glm::vec3 a, glm::vec3 b, glm::vec3 c, size_t materialId);
     bool Intersect(const Ray& ray, IntersectionReport& report, float tmin, float tmax, float intersectionEpsilon);
+    bool FasterIntersect(const Ray& ray, IntersectionReport& report, float tmin, float tmax, float intersectionEpsilon);
+    
     glm::vec3 GiveCenter() const;
 };
 

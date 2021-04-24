@@ -154,8 +154,6 @@ bool Scene::TestWorldIntersection(const Ray& ray, IntersectionReport& report, fl
     for(size_t i=0; i< _meshes.size(); i++)
     {
         IntersectionReport r;
-        if(ray.direction.x == -0.386324555f && ray.direction.y == -0.386324555f && ray.direction.z == -0.837559998f)
-            int eren = 0;
         if(_meshes[i].Intersect(ray, r, tmin, tmax, intersectionTestEpsilon))
         {
             result = true;
@@ -228,9 +226,6 @@ bool Scene::ShadowRayIntersection(float tmin, float tmax, float intersectionTest
 
 glm::vec3 Scene::ComputeAmbientComponent(const IntersectionReport& report)
 {
-    int materialId = report.materialId;
-    if(materialId != 0 && materialId != 1 && materialId != 2 && materialId != 3 && materialId != 4 && materialId != 5 )
-        int eren = 0;
     return _ambientLight * _materials[report.materialId].ambientReflectance;
 }
 

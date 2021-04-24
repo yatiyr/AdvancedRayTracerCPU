@@ -18,7 +18,7 @@ public:
     float zmax;
     
     AABB(const std::vector<Triangle>& triangleList);
-    bool Intersect(const Ray& r, float tmin, float tmax);
+    bool Intersect(const Ray& r);
 };
 
 
