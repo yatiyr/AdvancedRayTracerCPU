@@ -52,6 +52,11 @@ struct Indices
     int c;
 };
 
+struct SplittedRays
+{
+    Ray reflected;
+    Ray transmitted;
+};
 
 struct IntersectionReport
 {

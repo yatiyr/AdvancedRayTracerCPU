@@ -359,4 +359,7 @@ inline void SceneReadTriangles(tinyxml2::XMLNode* root, std::vector<Triangle>& _
     }
 }
 
+
+
+
 #endif /* __UTILS_H__ */

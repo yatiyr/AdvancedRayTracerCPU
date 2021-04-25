@@ -59,40 +59,6 @@ glm::vec2 Scene::GiveCoords(int index, int width)
     return result;
 }
 
-void Scene::PopulateWorkGroups()
-{
-    int totalSize = _imageHeight * _imageWidth;
-    int chunkSize = totalSize / _workGroupSize;
-
-    for(int i=0; i<_workGroupSize; i++)
-    {
-        int start;
-        int end;
-
-        start = i * chunkSize;
-        if(i == _workGroupSize - 1)
-            end = (i+1) * chunkSize - 1 + (totalSize%chunkSize);
-        else
-            end = (i+1) * chunkSize - 1;
-
-        WorkGroup wg;
-        wg.start = start;
-        wg.end   = end;
-        _workGroups.push_back(wg);
-    }
-}
-
-void Scene::ProcessWorkGroup(WorkGroup wg)
-{
-    for(int i=wg.start; i<=wg.end; i++)
-    {
-        glm::vec2 coords = GiveCoords(i, _imageWidth);
-        Ray pR = ComputePrimaryRay(coords.x, coords.y);
-        glm::vec3 pixel = RayTrace(pR);
-        WritePixelCoord(coords.x, coords.y, pixel);
-    }
-}
-
 void Scene::RenderThread()
 {
     int cores = coreSize;
@@ -128,69 +94,12 @@ void Scene::RenderThread()
     {
         element.get();
     }
-
-
-/*
-    {
-        std::unique_lock<std::mutex> lock(mutex);
-        waitResults.wait(lock, [=]
-        {
-            return count >= 600;
-        });
-    } */
-    /*
-    while(true)
-    {
-        if(currentWorkIndex >= worksize)
-            break;
-
-        m.lock();
-        int index = currentWorkIndex;
-        currentWorkIndex++;
-        m.unlock();
-
-        //std::cout << std::this_thread::get_id() <<"      " << index << " \n";
-
-        glm::vec2 coords = GiveCoords(index, _imageWidth);
-        Ray pR = ComputePrimaryRay(coords.x, coords.y);
-        glm::vec3 pixel = RayTrace(pR);
-        WritePixelCoord(coords.x, coords.y, pixel);
-    }
-    */
 }
 
 float* Scene::GetImage()
 {
     Timer t;
-
-/*
-    PopulateWorkGroups();
-
-    double start = omp_get_wtime();
-    #pragma omp parallel for num_threads(32)
-    for(int i=9; i<; i++)
-    {
-        ProcessWorkGroup(_workGroups[i]);
-    }
-    double end = omp_get_wtime();
-    std::cout << end - start << ".s\n"; */
-
     RenderThread();
-/*
-    for(size_t i=0; i<1; i++)
-    {
-        threadPool.push_back(std::thread(&Scene::RenderThread, this));
-    }
-
-    for(size_t i=0; i<1; i++)
-    {
-        threadPool[i].join();
-        //threadPool[i].get();
-    }
-
-
-    std::cout << "Image rendered in --->";
-*/
     return _image;
 }
 
@@ -291,7 +200,6 @@ bool Scene::ShadowRayIntersection(float tmin, float tmax, float intersectionTest
 
     }
 
-
     for(size_t i=0; i<_triangles.size(); i++)
     {
         IntersectionReport r;
@@ -345,11 +253,11 @@ glm::vec3 Scene::ComputeSpecularComponent(const IntersectionReport& report, cons
 
 glm::vec3 Scene::RayTrace(const Ray& ray)
 {
-    glm::vec3 pixel(0.0);
-    IntersectionReport r;
 
+    IntersectionReport r;
     if(TestWorldIntersection(ray, r, 0, 2000, _intersectionTestEpsilon))
     {
+        glm::vec3 pixel(0.0);        
         pixel += ComputeAmbientComponent(r);
         
         for(size_t i=0; i<_pointLights.size(); i++)
@@ -363,9 +271,11 @@ glm::vec3 Scene::RayTrace(const Ray& ray)
                 pixel += ComputeDiffuseComponent(r, _pointLights[i]) + ComputeSpecularComponent(r, _pointLights[i], ray);
             }
         }
+
+        return glm::clamp(pixel, glm::vec3(0.0f), glm::vec3(1.0f));
     }
 
-    return glm::clamp(pixel, glm::vec3(0.0f), glm::vec3(1.0f));
+    return glm::clamp(_backgroundColor, glm::vec3(0.0f), glm::vec3(1.0f));
 
 }
 

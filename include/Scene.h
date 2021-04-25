@@ -33,6 +33,7 @@ class Scene
 {
 private:
 
+    tinyxml2::XMLNode* inputRoot;
 
     int worksize;
     int coreSize;
@@ -42,9 +43,6 @@ private:
     std::mutex mutex;
     std::condition_variable waitResults;
 
-    std::vector<std::thread> threadPool;
-
-    tinyxml2::XMLNode* inputRoot;
     std::stringstream stream;    
 
     glm::vec3               _backgroundColor;
@@ -69,18 +67,8 @@ private:
     std::vector<std::string> imageNames;
     float* _image;
 
-    std::vector<Ray> _primaryRayPool;
-
-    void PopulateWorkGroups();
-    void ProcessWorkGroup(WorkGroup wg);
-
     Ray ComputePrimaryRay(int i, int j);
-
     void ClearImage();
-
-    int _workGroupSize = 16;
-
-    std::vector<WorkGroup> _workGroups;
 
 
     // RELATED TO RAY TRACING
