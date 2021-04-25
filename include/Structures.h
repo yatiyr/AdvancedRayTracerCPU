@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <list>
 #include <stack>
+#include <Ray.h>
 
 struct Camera
 {
@@ -49,14 +50,6 @@ struct Indices
     int a;
     int b;
     int c;
-};
-
-struct Ray
-{
-    alignas(16) glm::vec3 origin;
-    alignas(16) glm::vec3 direction;
-    alignas(16) glm::vec3 rcp;
-    std::stack<float> mediumStack;
 };
 
 

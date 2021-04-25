@@ -17,6 +17,11 @@
 #include <Triangle.h>
 #include <Mesh.h>
 #include <omp.h>
+#include <thread>
+#include <atomic>
+#include <Timer.h>
+#include <future>
+#include <iomanip>
 
 struct WorkGroup
 {
@@ -27,6 +32,17 @@ struct WorkGroup
 class Scene
 {
 private:
+
+
+    int worksize;
+    int coreSize;
+    std::atomic<int> count;
+    std::vector<std::future<void>> futureVector;
+    std::mutex progressLock;
+    std::mutex mutex;
+    std::condition_variable waitResults;
+
+    std::vector<std::thread> threadPool;
 
     tinyxml2::XMLNode* inputRoot;
     std::stringstream stream;    
@@ -62,7 +78,7 @@ private:
 
     void ClearImage();
 
-    int _workGroupSize = 32;
+    int _workGroupSize = 16;
 
     std::vector<WorkGroup> _workGroups;
 
@@ -88,8 +104,9 @@ private:
     glm::vec3 ComputeSpecularComponent(const IntersectionReport& report, const PointLight& light, const Ray& ray);
 
     glm::vec3 RayTrace(const Ray& ray);
+    glm::vec3 RecursiveTrace(const Ray& ray);
 
-    
+    void RenderThread();
 
 public:
 

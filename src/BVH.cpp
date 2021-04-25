@@ -1,5 +1,78 @@
 #include <BVH.h>
 
+
+
+SplittedTriangles BVH::splitMidpoint(const std::vector<Triangle>& triangleList, int axis)
+{
+    SplittedTriangles splittedResult;
+
+    float xlength = box.xmax - box.xmin;
+    float ylength = box.ymax - box.ymin;
+    float zlength = box.zmax - box.zmin;
+
+    glm::vec3 totalVec(0.0, 0.0, 0.0);
+    std::vector<VertexIndex> vivec;
+
+    for(size_t i=0; i<triangleList.size(); i++)
+    {
+        glm::vec3 v = triangleList[i].GiveCenter();
+        totalVec += v;
+
+        VertexIndex vi;
+        vi.vertex = v;
+        vi.index  = i;
+        vivec.push_back(vi);
+    }
+
+    totalVec /= triangleList.size();
+
+
+    if(axis == 0)
+    {
+        for(size_t i=0; i<vivec.size(); i++)
+        {
+            if(vivec[i].vertex.x <= totalVec.x)
+            {
+                splittedResult.p1.push_back(triangleList[vivec[i].index]);
+            }
+            else
+            {
+                splittedResult.p2.push_back(triangleList[vivec[i].index]);
+            }
+        }
+    }
+    else if(axis == 1)
+    {
+        for(size_t i=0; i<vivec.size(); i++)
+        {
+            if(vivec[i].vertex.y <= totalVec.y)
+            {
+                splittedResult.p1.push_back(triangleList[vivec[i].index]);                }
+            else
+            {
+                splittedResult.p2.push_back(triangleList[vivec[i].index]);
+            }
+        }
+    }
+    else if(axis == 2)
+    {
+        for(size_t i=0; i<vivec.size(); i++)
+        {
+            if(vivec[i].vertex.z <= totalVec.z)
+            {
+                splittedResult.p1.push_back(triangleList[vivec[i].index]);
+            }
+            else
+            {
+                splittedResult.p2.push_back(triangleList[vivec[i].index]);
+            }
+        }
+    }
+
+    return splittedResult;    
+}
+
+
 SplittedTriangles BVH::splitMidpoint(const std::vector<Triangle>& triangleList)
 {
     SplittedTriangles splittedResult;
@@ -72,7 +145,7 @@ SplittedTriangles BVH::splitMidpoint(const std::vector<Triangle>& triangleList)
 
 BVH::BVH(const std::vector<Triangle>& triangleList, int depth, int maxdepth) : box(triangleList)
 {
-    if(depth == maxdepth || triangleList.size() <= 16)
+    if(depth == maxdepth || triangleList.size() <= 1)
     {
 
         for(size_t i=0; i<triangleList.size(); i++)
@@ -105,10 +178,44 @@ BVH::BVH(const std::vector<Triangle>& triangleList, int depth, int maxdepth) : b
     this->rightChild = new BVH(st.p2, depth + 1, maxdepth);
 }
 
+BVH::BVH(const std::vector<Triangle>& triangleList, int depth, int maxdepth, int axis) : box(triangleList)
+{
+    if(depth == maxdepth || triangleList.size() <= 1)
+    {
+
+        for(size_t i=0; i<triangleList.size(); i++)
+        {
+            this->primitives.push_back(triangleList[i]);
+        }
+
+        this->leftChild  = nullptr;
+        this->rightChild = nullptr;
+
+        return;
+    }
+
+    SplittedTriangles st = splitMidpoint(triangleList);
+
+    if(st.p1.empty() || st.p2.empty())
+    {
+        for(size_t i=0; i<triangleList.size(); i++)
+        {
+            this->primitives.push_back(triangleList[i]);
+        }
+
+        this->leftChild  = nullptr;
+        this->rightChild = nullptr;
+
+        return;
+    }
+
+    this->leftChild = new BVH(st.p1, depth + 1, maxdepth, (axis+1)%3);
+    this->rightChild = new BVH(st.p2, depth + 1, maxdepth, (axis+1)%3);
+}
 
 bool BVH::Intersect(const Ray& ray, IntersectionReport& report, float tmin, float tmax, float intersectionTestEpslion)
 {
-    bool boxTest = box.Intersect(ray);
+    bool boxTest = box.Intersect2(ray, tmin, tmax);
 
     if(!boxTest)
         return false;

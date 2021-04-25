@@ -54,9 +54,11 @@ private:
     int splitAxis;
 
     SplittedTriangles splitMidpoint(const std::vector<Triangle>& triangleList);
+    SplittedTriangles splitMidpoint(const std::vector<Triangle>& triangleList, int axis);
 public:
     BVH(const std::vector<Triangle>& triangleList, int depth, int maxdepth);
-
+    BVH(const std::vector<Triangle>& triangleList, int depth, int maxdepth, int axis);
+    
     bool Intersect(const Ray& ray, IntersectionReport& report, float tmin, float tmax, float intersectionTestEpsilon);
 };
 

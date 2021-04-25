@@ -32,8 +32,13 @@ Scene::Scene(const std::string& filepath)
 
     _imageHeight = _activeCamera.imageResolution.y;
     _imageWidth  = _activeCamera.imageResolution.x;
-
+    worksize = _imageHeight * _imageWidth;
     _image = new float[_imageHeight*_imageWidth*4];
+
+    coreSize = std::thread::hardware_concurrency();
+    count = 0;
+
+    
 }
 
 Scene::~Scene()
@@ -88,21 +93,104 @@ void Scene::ProcessWorkGroup(WorkGroup wg)
     }
 }
 
+void Scene::RenderThread()
+{
+    int cores = coreSize;
+
+    while(cores--)
+    {
+        futureVector.push_back(
+            std::async(std::launch::async, [=]()
+            {
+                while(true)
+                {
+                    int index = count++;
+                    if(index >= worksize)
+                        break;
+
+                    glm::vec2 coords = GiveCoords(index, _imageWidth);
+                    Ray pR = ComputePrimaryRay(coords.x, coords.y);
+                    glm::vec3 pixel = RayTrace(pR);
+                    WritePixelCoord(coords.x, coords.y, pixel);
+
+/*
+                    {
+                        std::lock_guard<std::mutex> lock(progressLock);
+                        std::cout << "Progress: [" << std::setprecision(1) << std::fixed << (count / (float)worksize) * 100.0 << "% ] \r";
+                        std::cout.flush();
+                    } */
+                }
+            }));
+    }
+
+
+    for(auto& element : futureVector)
+    {
+        element.get();
+    }
+
+
+/*
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        waitResults.wait(lock, [=]
+        {
+            return count >= 600;
+        });
+    } */
+    /*
+    while(true)
+    {
+        if(currentWorkIndex >= worksize)
+            break;
+
+        m.lock();
+        int index = currentWorkIndex;
+        currentWorkIndex++;
+        m.unlock();
+
+        //std::cout << std::this_thread::get_id() <<"      " << index << " \n";
+
+        glm::vec2 coords = GiveCoords(index, _imageWidth);
+        Ray pR = ComputePrimaryRay(coords.x, coords.y);
+        glm::vec3 pixel = RayTrace(pR);
+        WritePixelCoord(coords.x, coords.y, pixel);
+    }
+    */
+}
+
 float* Scene::GetImage()
 {
+    Timer t;
 
+/*
     PopulateWorkGroups();
 
     double start = omp_get_wtime();
     #pragma omp parallel for num_threads(32)
-    for(int i=0; i<_workGroupSize; i++)
+    for(int i=9; i<; i++)
     {
         ProcessWorkGroup(_workGroups[i]);
     }
     double end = omp_get_wtime();
+    std::cout << end - start << ".s\n"; */
 
-    std::cout << "Image rendered in --->" << end - start << " s.\n";
+    RenderThread();
+/*
+    for(size_t i=0; i<1; i++)
+    {
+        threadPool.push_back(std::thread(&Scene::RenderThread, this));
+    }
 
+    for(size_t i=0; i<1; i++)
+    {
+        threadPool[i].join();
+        //threadPool[i].get();
+    }
+
+
+    std::cout << "Image rendered in --->";
+*/
     return _image;
 }
 
@@ -131,18 +219,17 @@ void Scene::WritePixelCoord(int i, int j, const glm::vec3& color)
 
 Ray Scene::ComputePrimaryRay(int i, int j)
 {
-    Ray r;
-    r.origin = _activeCamera.position;
-    glm::vec3 m = r.origin + _activeCamera.gaze * _activeCamera.nearDistance;
+    glm::vec3 origin = _activeCamera.position;
+    glm::vec3 m = origin + _activeCamera.gaze * _activeCamera.nearDistance;
     glm::vec3 q = m + _activeCamera.nearPlane.x * _activeCamera.v + _activeCamera.nearPlane.w * _activeCamera.up;
 
     float su = (j + 0.5) * (_activeCamera.nearPlane.y - _activeCamera.nearPlane.x) / _activeCamera.imageResolution.x;
     float sv = (i + 0.5) * (_activeCamera.nearPlane.w - _activeCamera.nearPlane.z) / _activeCamera.imageResolution.y;
 
-    r.direction = glm::normalize((q + su*_activeCamera.v - sv*_activeCamera.up) - r.origin);
-    r.rcp = 1.f / r.direction;
+    glm::vec3 direction = glm::normalize((q + su*_activeCamera.v - sv*_activeCamera.up) - origin);
 
-    return r;    
+
+    return Ray(origin, direction);    
 }
 
 
@@ -188,11 +275,10 @@ bool Scene::TestWorldIntersection(const Ray& ray, IntersectionReport& report, fl
 bool Scene::ShadowRayIntersection(float tmin, float tmax, float intersectionTestEpsilon, float shadowRayEpsilon, const PointLight& light, const IntersectionReport& report)
 {
 
-    Ray ray;
-
-    ray.direction = glm::normalize(light.position - report.intersection);
-    ray.origin    = report.intersection + shadowRayEpsilon*report.normal;
-    ray.rcp = 1.f / ray.direction;
+    glm::vec3 direction = glm::normalize(light.position - report.intersection);
+    glm::vec3 origin    = report.intersection + shadowRayEpsilon*report.normal;
+    
+    Ray ray(origin, direction);
 
     float dist = glm::length(light.position - report.intersection);
 
@@ -281,5 +367,10 @@ glm::vec3 Scene::RayTrace(const Ray& ray)
 
     return glm::clamp(pixel, glm::vec3(0.0f), glm::vec3(1.0f));
 
+}
 
+
+glm::vec3 RecursiveTrace(const Ray& ray)
+{
+    
 }
