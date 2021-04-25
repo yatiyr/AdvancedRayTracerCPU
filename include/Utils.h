@@ -360,6 +360,13 @@ inline void SceneReadTriangles(tinyxml2::XMLNode* root, std::vector<Triangle>& _
 }
 
 
+inline Ray* RefTransRays(const Ray& ray, const Material& hitMaterial)
+{
+    Ray result[2];
+
+    return result;
+}
+
 
 
 #endif /* __UTILS_H__ */

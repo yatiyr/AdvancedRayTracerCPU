@@ -223,15 +223,36 @@ glm::vec3 Scene::ComputeAmbientComponent(const IntersectionReport& report)
     return _ambientLight * _materials[report.materialId].ambientReflectance;
 }
 
-glm::vec3 Scene::ComputeDiffuseComponent(const IntersectionReport& report, const PointLight& light)
+glm::vec3 Scene::ComputeDiffuseSpecular(const IntersectionReport& report, const Ray& ray)
 {
     glm::vec3 result = glm::vec3(0.0);
 
-    float lightDistance = glm::length(light.position - report.intersection);
-    glm::vec3 wi = glm::normalize(light.position - report.intersection);
-    result += _materials[report.materialId].diffuseReflectance *
-              std::max(0.0f, glm::dot(wi, report.normal)) *
-              (light.intensity / (lightDistance * lightDistance));
+    for(size_t i=0; i<_pointLights.size(); i++)
+    {
+        if(ShadowRayIntersection(0, 2000, _intersectionTestEpsilon, _shadowRayEpsilon, _pointLights[i], report))
+        {
+            continue;
+        }
+        else
+        {
+            float lightDistance = glm::length(_pointLights[i].position - report.intersection);
+            glm::vec3 wi = glm::normalize(_pointLights[i].position - report.intersection);
+
+            // Diffuse Calculation
+            result += _materials[report.materialId].diffuseReflectance *
+                    std::max(0.0f, glm::dot(wi, report.normal)) *
+                    (_pointLights[i].intensity / (lightDistance * lightDistance));
+
+
+            // Specular Calculation
+            glm::vec3 h  = glm::normalize(wi - ray.direction);
+
+            result += _materials[report.materialId].specularReflectance *
+                    std::pow(std::max(0.0f, glm::dot(report.normal, h)), _materials[report.materialId].phongExponent) *
+                    (_pointLights[i].intensity / (lightDistance * lightDistance));
+        }
+    }
+
     return result;
 }
 
@@ -258,19 +279,8 @@ glm::vec3 Scene::RayTrace(const Ray& ray)
     if(TestWorldIntersection(ray, r, 0, 2000, _intersectionTestEpsilon))
     {
         glm::vec3 pixel(0.0);        
-        pixel += ComputeAmbientComponent(r);
+        pixel += ComputeAmbientComponent(r) + ComputeDiffuseSpecular(r, ray) + RecursiveTrace(ray, r, 0);
         
-        for(size_t i=0; i<_pointLights.size(); i++)
-        {
-            if(ShadowRayIntersection(0, 2000, _intersectionTestEpsilon, _shadowRayEpsilon, _pointLights[i], r))
-            {
-                continue;
-            }
-            else
-            {
-                pixel += ComputeDiffuseComponent(r, _pointLights[i]) + ComputeSpecularComponent(r, _pointLights[i], ray);
-            }
-        }
 
         return glm::clamp(pixel, glm::vec3(0.0f), glm::vec3(1.0f));
     }
@@ -280,7 +290,45 @@ glm::vec3 Scene::RayTrace(const Ray& ray)
 }
 
 
-glm::vec3 RecursiveTrace(const Ray& ray)
+glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, int bounce)
 {
-    
+
+    glm::vec3 result(0.0);
+
+    if(bounce >= _maxRecursionDepth)
+        return result;
+
+    // Diffuse element
+    if(_materials[iR.materialId].type == -1)
+        return result;
+
+    // Mirror
+    else if(_materials[iR.materialId].type == 0)
+    {
+        glm::vec3 reflectedRayOrigin = iR.intersection + iR.normal*_shadowRayEpsilon;
+        glm::vec3 reflectedRayDir    = glm::reflect(ray.direction, iR.normal);
+
+        Ray reflected(reflectedRayOrigin, reflectedRayDir);
+        IntersectionReport report;
+        if(TestWorldIntersection(reflected, report, 0, 2000, _intersectionTestEpsilon))
+        {
+            result += _materials[iR.materialId].mirrorReflectance * (ComputeAmbientComponent(report) +
+                                                                         ComputeDiffuseSpecular(report, reflected) +
+                                                                         RecursiveTrace(reflected, report, bounce + 1));
+        }
+    }
+
+    // Dielectric
+    else if(_materials[iR.materialId].type == 1)
+    {
+
+    }
+
+    // Conductor
+    else if(_materials[iR.materialId].type == 2)
+    {
+
+    }
+
+    return result;
 }

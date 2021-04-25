@@ -88,11 +88,11 @@ private:
 
 
     glm::vec3 ComputeAmbientComponent(const IntersectionReport& report);
-    glm::vec3 ComputeDiffuseComponent(const IntersectionReport& report, const PointLight& light);
+    glm::vec3 ComputeDiffuseSpecular(const IntersectionReport& report, const Ray& ray);
     glm::vec3 ComputeSpecularComponent(const IntersectionReport& report, const PointLight& light, const Ray& ray);
 
     glm::vec3 RayTrace(const Ray& ray);
-    glm::vec3 RecursiveTrace(const Ray& ray);
+    glm::vec3 RecursiveTrace(const Ray& ray, const IntersectionReport& iR, int bounce);
 
     void RenderThread();
 

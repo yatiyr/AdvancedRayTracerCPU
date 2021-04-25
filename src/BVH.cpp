@@ -6,10 +6,6 @@ SplittedTriangles BVH::splitMidpoint(const std::vector<Triangle>& triangleList, 
 {
     SplittedTriangles splittedResult;
 
-    float xlength = box.xmax - box.xmin;
-    float ylength = box.ymax - box.ymin;
-    float zlength = box.zmax - box.zmin;
-
     glm::vec3 totalVec(0.0, 0.0, 0.0);
     std::vector<VertexIndex> vivec;
 

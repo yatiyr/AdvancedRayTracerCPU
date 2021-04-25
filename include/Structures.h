@@ -35,7 +35,7 @@ struct Material
     alignas(16) glm::vec3 mirrorReflectance;
     alignas(16) glm::vec3 absorptionCoefficient;
     float phongExponent;
-    int type; // 0: normal 1: mirror 2: dielectric 3: conductor
+    int type;
     float refractionIndex;
     float absorptionIndex;
 };
@@ -50,12 +50,6 @@ struct Indices
     int a;
     int b;
     int c;
-};
-
-struct SplittedRays
-{
-    Ray reflected;
-    Ray transmitted;
 };
 
 struct IntersectionReport

@@ -7,6 +7,11 @@ class Ray
 {
 public:
 
+    Ray()
+    {
+        
+    }
+
     Ray(glm::vec3& origin, glm::vec3& direction)
     {
         this->origin = origin;
