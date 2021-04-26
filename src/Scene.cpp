@@ -486,7 +486,33 @@ glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, in
     // Conductor
     else if(_materials[iR.materialId].type == 2)
     {
+        glm::vec3 reflectedRayOrigin = iR.intersection + iR.normal*_shadowRayEpsilon;
+        glm::vec3 reflectedRayDir    = glm::normalize(glm::reflect(ray.direction, iR.normal));
+        float cosTheta = glm::dot(-ray.direction, iR.normal);
+        float aI = _materials[iR.materialId].absorptionIndex;
+        float rI = _materials[iR.materialId].refractionIndex;
 
+        float rS = ((rI*rI + aI*aI) - 2*rI*cosTheta + (cosTheta*cosTheta))/
+                   ((rI*rI + aI*aI) + 2*rI*cosTheta + (cosTheta*cosTheta));
+
+        float rP = ((rI*rI + aI*aI)*(cosTheta*cosTheta) - 2*rI*cosTheta + 1)/
+                   ((rI*rI + aI*aI)*(cosTheta*cosTheta) + 2*rI*cosTheta + 1);
+
+        float reflectionRatio = (rS + rP)/2;
+        
+        Ray reflected(reflectedRayOrigin, reflectedRayDir);
+        reflected.isRefracting = ray.isRefracting;
+        reflected.mediumCoeffBefore = ray.mediumCoeffBefore;
+        reflected.mediumCoeffNow    = ray.mediumCoeffNow;
+        reflected.materialIdCurrentlyIn = ray.materialIdCurrentlyIn;
+
+        IntersectionReport report;
+        if(TestWorldIntersection(reflected, report, 0, 2000, _intersectionTestEpsilon))
+        {
+            result += attenuation * reflectionRatio * _materials[iR.materialId].mirrorReflectance * (
+                                                                         ComputeDiffuseSpecular(report, reflected) +
+                                                                         RecursiveTrace(reflected, report, bounce + 1));
+        }        
     }
 
     return result;
