@@ -6,6 +6,7 @@
 #include <Triangle.h>
 #include <Sphere.h>
 #include <sstream>
+#include <happly.h>
 
 
 inline void SceneReadConstants(tinyxml2::XMLNode* root, glm::vec3& _backgroundColor, float& _shadowRayEpsilon, float& _intersectionTestEpsilon, int& _maxRecursionDepth)
@@ -67,38 +68,82 @@ inline void SceneReadCameras(tinyxml2::XMLNode* root, std::vector<Camera>& _came
     Camera camera;
     while(element)
     {
-        auto child = element->FirstChildElement("Position");
-        stream << child->GetText() << std::endl;
-        child = element->FirstChildElement("Gaze");
-        stream << child->GetText() << std::endl;
-        child = element->FirstChildElement("Up");
-        stream << child->GetText() << std::endl;
-        child = element->FirstChildElement("NearPlane");
-        stream << child->GetText() << std::endl;
-        child = element->FirstChildElement("NearDistance");
-        stream << child->GetText() << std::endl;
-        child = element->FirstChildElement("ImageResolution");
-        stream << child->GetText() << std::endl;
-        child = element->FirstChildElement("ImageName");
-        stream << child->GetText() << std::endl;
 
-        stream >> camera.position.x >> camera.position.y >> camera.position.z;
-        stream >> camera.gaze.x >> camera.gaze.y >> camera.gaze.z;
-        stream >> camera.up.x >> camera.up.y >> camera.up.z;
-        stream >> camera.nearPlane.x >> camera.nearPlane.y >> camera.nearPlane.z >> camera.nearPlane.w;
-        stream >> camera.nearDistance;
-        stream >> camera.imageResolution.x >> camera.imageResolution.y;
+        if(element->Attribute("type") && strcmp(element->Attribute("type"), "lookAt") == 0)
+        {
+            float fovY;
+            glm::vec3 gazePoint;
 
-        // normalize gaze and up and compute v
-        camera.gaze = glm::normalize(camera.gaze);
-        camera.up   = glm::normalize(camera.up);
-        camera.v    = glm::normalize(glm::cross(camera.gaze, camera.up));
+            auto child = element->FirstChildElement("Position");
+            stream << child->GetText() << std::endl;
+            child = element->FirstChildElement("GazePoint");
+            stream << child->GetText() << std::endl;
+            child = element->FirstChildElement("Up");
+            stream << child->GetText() << std::endl;
+            child = element->FirstChildElement("FovY");
+            stream << child->GetText() << std::endl;
+            child = element->FirstChildElement("NearDistance");
+            stream << child->GetText() << std::endl;
+            child = element->FirstChildElement("ImageResolution");
+            stream << child->GetText() << std::endl;
+            child = element->FirstChildElement("ImageName");
+            stream << child->GetText() << std::endl;
 
+            stream >> camera.position.x >> camera.position.y >> camera.position.z;
+            stream >> gazePoint.x >> gazePoint.y >> gazePoint.z;
+            stream >> camera.up.x >> camera.up.y >> camera.up.z;
+            stream >> fovY;
+            stream >> camera.nearDistance;
+            stream >> camera.imageResolution.x >> camera.imageResolution.y;
+
+            float l, r, b, t;
+
+            t = std::tan(fovY/2)*camera.nearDistance;
+            r = (camera.imageResolution.x / camera.imageResolution.y) * t;
+            l = -r;
+            b = -t;
+
+            glm::vec3 gaze = glm::normalize(gazePoint - camera.position);
+            camera.gaze = gaze;
+            camera.up   = glm::normalize(camera.up);
+            camera.v    = glm::normalize(glm::cross(camera.gaze, camera.up));
+            camera.nearPlane = glm::vec4(l,r,b,t);            
+        }
+        else
+        {
+            auto child = element->FirstChildElement("Position");
+            stream << child->GetText() << std::endl;
+            child = element->FirstChildElement("Gaze");
+            stream << child->GetText() << std::endl;
+            child = element->FirstChildElement("Up");
+            stream << child->GetText() << std::endl;
+            child = element->FirstChildElement("NearPlane");
+            stream << child->GetText() << std::endl;
+            child = element->FirstChildElement("NearDistance");
+            stream << child->GetText() << std::endl;
+            child = element->FirstChildElement("ImageResolution");
+            stream << child->GetText() << std::endl;
+            child = element->FirstChildElement("ImageName");
+            stream << child->GetText() << std::endl;
+
+            stream >> camera.position.x >> camera.position.y >> camera.position.z;
+            stream >> camera.gaze.x >> camera.gaze.y >> camera.gaze.z;
+            stream >> camera.up.x >> camera.up.y >> camera.up.z;
+            stream >> camera.nearPlane.x >> camera.nearPlane.y >> camera.nearPlane.z >> camera.nearPlane.w;
+            stream >> camera.nearDistance;
+            stream >> camera.imageResolution.x >> camera.imageResolution.y;
+
+            // normalize gaze and up and compute v
+            camera.gaze = glm::normalize(camera.gaze);
+            camera.up   = glm::normalize(camera.up);
+            camera.v    = glm::normalize(glm::cross(camera.gaze, camera.up));
+
+        }
+        
         std::string imageName;
         stream >> imageName;
         imageNames.push_back(imageName);
         _imageName = imageName;
-
 
         _cameras.push_back(camera);
         element = element->NextSiblingElement("Camera");
@@ -266,22 +311,58 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
 
         child = element->FirstChildElement("Faces");
         stream << child->GetText() << std::endl;
-        Indices indices;
 
 
         std::vector<Triangle> triangleList;
 
-
-        while(!(stream >> indices.a).eof())
+        if(child->Attribute("plyFile"))
         {
-            stream >> indices.b >> indices.c;
+            const char* localPath = child->Attribute("plyFile");
+            std::string path = std::string(ROOT_DIR) + "assets/scenes/" + std::string(localPath);
 
-            glm::vec3 a = _vertexData[indices.a - 1];
-            glm::vec3 b = _vertexData[indices.b - 1];
-            glm::vec3 c = _vertexData[indices.c - 1];
+            happly::PLYData plyIn(path);
 
-            Triangle tri(a, b, c);
-            triangleList.push_back(tri);
+            std::vector<std::array<double, 3>> vPos = plyIn.getVertexPositions();
+            std::vector<std::vector<size_t>> fInd = plyIn.getFaceIndices<size_t>();
+
+            for(size_t i=0; i<fInd.size(); i++)
+            {
+                glm::vec3 a,b,c;
+
+                a.x = vPos[fInd[i][0]][0];
+                a.y = vPos[fInd[i][0]][1];
+                a.z = vPos[fInd[i][0]][2];
+
+                b.x = vPos[fInd[i][1]][0];
+                b.y = vPos[fInd[i][1]][1];
+                b.z = vPos[fInd[i][1]][2];                                
+
+                c.x = vPos[fInd[i][2]][0];
+                c.y = vPos[fInd[i][2]][1];
+                c.z = vPos[fInd[i][2]][2];
+
+                Triangle tri(a, b, c);
+                triangleList.push_back(tri);
+                
+            }
+
+        }
+        else
+        {
+            Indices indices;
+
+
+            while(!(stream >> indices.a).eof())
+            {
+                stream >> indices.b >> indices.c;
+
+                glm::vec3 a = _vertexData[indices.a - 1];
+                glm::vec3 b = _vertexData[indices.b - 1];
+                glm::vec3 c = _vertexData[indices.c - 1];
+
+                Triangle tri(a, b, c);
+                triangleList.push_back(tri);
+            }
         }
 
         Mesh m(triangleList, materialId - 1);

@@ -4,7 +4,7 @@
 int main(int argc, char** argv)
 {
 
-    Renderer RnDr("assets/scenes/hw2/spheres.xml");
+    Renderer RnDr(argv[1]);
 
     try
     {    

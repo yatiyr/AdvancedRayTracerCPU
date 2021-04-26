@@ -11,7 +11,7 @@
             <NearPlane>-1 1 -0.5 0.5</NearPlane>
             <NearDistance>1</NearDistance>
             <ImageResolution>1440 720</ImageResolution>
-            <ImageName>scienceTree.png</ImageName>
+            <ImageName>scienceTree_recursive.png</ImageName>
         </Camera>
     </Cameras>
 
