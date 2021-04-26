@@ -9,7 +9,7 @@
             <Position> 0 0 0 </Position>
             <Gaze> 0 0 -1 </Gaze>
             <Up> 0 1 0 </Up>
-            <NearPlane> -1 1 -1 1 10</NearPlane>
+            <NearPlane> -1 1 -1 1 </NearPlane>
             <NearDistance>10</NearDistance>
             <ImageResolution> 720 720 </ImageResolution>
             <ImageName> spheres.png </ImageName>
@@ -20,11 +20,11 @@
         <AmbientLight> 25 25 25 </AmbientLight>
         <PointLight id="1">
             <Position> -4 4 -13  </Position>
-            <Intensity> 4550 4550 4550 </Intensity> 
+            <Intensity> 35 35 35 </Intensity> 
         </PointLight>
         <PointLight id="2">
             <Position> 4 4 -13  </Position>
-            <Intensity> 4550 4550 4550 </Intensity> 
+            <Intensity> 35 35 35 </Intensity> 
         </PointLight>
     </Lights>
 

@@ -4,7 +4,7 @@
 int main(int argc, char** argv)
 {
 
-    Renderer RnDr("assets/scenes/hw2/cornellbox_recursive.xml");
+    Renderer RnDr("assets/scenes/hw2/spheres.xml");
 
     try
     {    
