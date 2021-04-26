@@ -9,13 +9,14 @@ public:
 
     Ray()
     {
-        
+
     }
 
     Ray(glm::vec3& origin, glm::vec3& direction)
     {
         this->origin = origin;
         this->direction = direction;
+        this->lastHitPos = glm::vec3(-1.0);
 
         this->invDirection = glm::vec3(1/direction.x, 1/direction.y, 1/direction.z);
         sign[0] = (invDirection.x < 0);
@@ -25,18 +26,25 @@ public:
         isRefracting      = false;
         mediumCoeffBefore = 1;
         mediumCoeffNow    = 1;
+        rayEnergy         = 1;
+
+        materialIdCurrentlyIn = -1;
     }
 
     glm::vec3 origin;
     glm::vec3 direction;
     glm::vec3 invDirection;
+    glm::vec3 lastHitPos;
+
     int sign[3];
-
-
-    bool  isRefracting;
 
     float mediumCoeffBefore;
     float mediumCoeffNow;
+    float rayEnergy;
+    
+    int materialIdCurrentlyIn;
+
+    bool  isRefracting;
 };
 
 

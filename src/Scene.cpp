@@ -309,10 +309,17 @@ glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, in
         glm::vec3 reflectedRayDir    = glm::reflect(ray.direction, iR.normal);
 
         Ray reflected(reflectedRayOrigin, reflectedRayDir);
+        reflected.isRefracting = ray.isRefracting;
+        reflected.mediumCoeffBefore = ray.mediumCoeffBefore;
+        reflected.mediumCoeffNow    = ray.mediumCoeffNow;
+        reflected.rayEnergy         = ray.rayEnergy;
+        reflected.materialIdCurrentlyIn = ray.materialIdCurrentlyIn;
+        reflected.lastHitPos            = ray.lastHitPos;
+
         IntersectionReport report;
         if(TestWorldIntersection(reflected, report, 0, 2000, _intersectionTestEpsilon))
         {
-            result += _materials[iR.materialId].mirrorReflectance * (ComputeAmbientComponent(report) +
+            result += _materials[iR.materialId].mirrorReflectance * (
                                                                          ComputeDiffuseSpecular(report, reflected) +
                                                                          RecursiveTrace(reflected, report, bounce + 1));
         }
@@ -321,6 +328,22 @@ glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, in
     // Dielectric
     else if(_materials[iR.materialId].type == 1)
     {
+
+        glm::vec3 reflectedRayOrigin = iR.intersection + iR.normal * _shadowRayEpsilon;
+        glm::vec3 reflectedRayDir    = glm::reflect(ray.direction, iR.normal);
+
+        glm::vec3 transmittedRayOrigin = iR.intersection - iR.normal * _shadowRayEpsilon;
+
+        // Ray is exiting
+        if(glm::dot(ray.direction, iR.normal) < 0)
+        {
+
+        }
+        // Ray is entering
+        else if(glm::dot(ray.direction, iR.normal) > 0)
+        {
+
+        }
 
     }
 
