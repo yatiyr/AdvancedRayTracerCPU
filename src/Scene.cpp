@@ -452,6 +452,7 @@ glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, in
                 float reflectionRatio = (rPpar*rPpar + rRpar*rRpar)/2;
                 float transmissionRatio = 1 - reflectionRatio;
 
+
                 IntersectionReport report;
                 if(TestWorldIntersection(reflected, report, 0, 2000, _intersectionTestEpsilon))
                 {

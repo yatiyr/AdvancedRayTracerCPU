@@ -1,5 +1,6 @@
 <Scene>
-    <BackgroundColor>0 0 0</BackgroundColor>
+    <BackgroundColor>0.5 0 0.5</BackgroundColor>
+    <MaxRecursionDepth>6</MaxRecursionDepth>
 
     <Cameras>
         <Camera id="1">
@@ -23,11 +24,13 @@
     </Lights>
 
     <Materials>
-        <Material id="1">
-            <AmbientReflectance>0.2 0.2 0.2</AmbientReflectance>
-            <DiffuseReflectance>0.8 0.8 0.8</DiffuseReflectance>
-            <SpecularReflectance>0.2 0.2 0.2</SpecularReflectance>
+        <Material id="1" type="dielectric">
+            <AmbientReflectance>0.200000 0.200000 0.200000</AmbientReflectance>
+            <DiffuseReflectance>0.200000 0.200000 0.200000</DiffuseReflectance>
+            <SpecularReflectance>0.500000 0.500000 0.500000</SpecularReflectance>
             <PhongExponent>3</PhongExponent>
+            <AbsorptionCoefficient>0.01 0.01 0.01</AbsorptionCoefficient>
+            <RefractionIndex>1.5</RefractionIndex>
         </Material>
     </Materials>
 

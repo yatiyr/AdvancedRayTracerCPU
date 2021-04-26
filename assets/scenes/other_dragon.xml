@@ -10,7 +10,7 @@
             <Up>0 0 1</Up>
             <FovY>32</FovY>
             <NearDistance>1</NearDistance>
-            <ImageResolution>800 480</ImageResolution>
+            <ImageResolution>12000 9000</ImageResolution>
             <ImageName>other_dragon.png</ImageName>
         </Camera>
     </Cameras>
@@ -38,9 +38,9 @@
         <Material id="1" type="conductor">
             <AmbientReflectance>0 0 0</AmbientReflectance>
             <DiffuseReflectance>0 0 0</DiffuseReflectance>
-            <SpecularReflectance>1 0.86 0.57</SpecularReflectance>
+            <SpecularReflectance>0.8 0.6 0.8</SpecularReflectance>
             <PhongExponent>5</PhongExponent>
-            <MirrorReflectance>1 0.86 0.57</MirrorReflectance>
+            <MirrorReflectance>1 0.01 0.85</MirrorReflectance>
             <RefractionIndex>0.370</RefractionIndex>
             <AbsorptionIndex>2.820</AbsorptionIndex>
         </Material>
