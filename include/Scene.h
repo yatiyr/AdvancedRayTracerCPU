@@ -23,6 +23,9 @@
 #include <future>
 #include <iomanip>
 
+
+const double EULER =  2.71828182845904523536;
+
 struct WorkGroup
 {
     int start;

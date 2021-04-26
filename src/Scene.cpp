@@ -35,7 +35,7 @@ Scene::Scene(const std::string& filepath)
     worksize = _imageHeight * _imageWidth;
     _image = new float[_imageHeight*_imageWidth*4];
 
-    coreSize = std::thread::hardware_concurrency();
+    coreSize = 8;//std::thread::hardware_concurrency();
     count = 0;
 
     
@@ -163,7 +163,7 @@ bool Scene::TestWorldIntersection(const Ray& ray, IntersectionReport& report, fl
         if(_triangles[i].Intersect(ray, r, tmin, tmax, intersectionTestEpsilon))
         {
             result = true;
-            report = r.d < report.d ? r : report;
+            report = r.d < report.d ? r : report;                    
         }
     }
 
@@ -173,7 +173,7 @@ bool Scene::TestWorldIntersection(const Ray& ray, IntersectionReport& report, fl
         if(_spheres[i].Intersect(ray, r, tmin, tmax))
         {
             result = true;
-            report = r.d < report.d ? r : report;
+            report = r.d < report.d ? r : report;              
         }
     }
 
@@ -302,24 +302,32 @@ glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, in
     if(_materials[iR.materialId].type == -1)
         return result;
 
+    glm::vec3 attenuation(1.0);
+
+    if(ray.materialIdCurrentlyIn != -1)
+    {
+        float dist = glm::length(ray.origin - iR.intersection);
+        attenuation.x = std::pow((float)EULER, -_materials[ray.materialIdCurrentlyIn].absorptionCoefficient.x *dist);
+        attenuation.y = std::pow((float)EULER, -_materials[ray.materialIdCurrentlyIn].absorptionCoefficient.y *dist);
+        attenuation.z = std::pow((float)EULER, -_materials[ray.materialIdCurrentlyIn].absorptionCoefficient.z *dist);                                
+    }
+
     // Mirror
-    else if(_materials[iR.materialId].type == 0)
+    if(_materials[iR.materialId].type == 0)
     {
         glm::vec3 reflectedRayOrigin = iR.intersection + iR.normal*_shadowRayEpsilon;
-        glm::vec3 reflectedRayDir    = glm::reflect(ray.direction, iR.normal);
+        glm::vec3 reflectedRayDir    = glm::normalize(glm::reflect(ray.direction, iR.normal));
 
         Ray reflected(reflectedRayOrigin, reflectedRayDir);
         reflected.isRefracting = ray.isRefracting;
         reflected.mediumCoeffBefore = ray.mediumCoeffBefore;
         reflected.mediumCoeffNow    = ray.mediumCoeffNow;
-        reflected.rayEnergy         = ray.rayEnergy;
         reflected.materialIdCurrentlyIn = ray.materialIdCurrentlyIn;
-        reflected.lastHitPos            = ray.lastHitPos;
 
         IntersectionReport report;
         if(TestWorldIntersection(reflected, report, 0, 2000, _intersectionTestEpsilon))
         {
-            result += _materials[iR.materialId].mirrorReflectance * (
+            result += attenuation * _materials[iR.materialId].mirrorReflectance * (
                                                                          ComputeDiffuseSpecular(report, reflected) +
                                                                          RecursiveTrace(reflected, report, bounce + 1));
         }
@@ -328,22 +336,150 @@ glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, in
     // Dielectric
     else if(_materials[iR.materialId].type == 1)
     {
-
-        glm::vec3 reflectedRayOrigin = iR.intersection + iR.normal * _shadowRayEpsilon;
-        glm::vec3 reflectedRayDir    = glm::reflect(ray.direction, iR.normal);
-
-        glm::vec3 transmittedRayOrigin = iR.intersection - iR.normal * _shadowRayEpsilon;
-
-        // Ray is exiting
+        
+        // Ray is entering
         if(glm::dot(ray.direction, iR.normal) < 0)
         {
+            glm::vec3 reflectedRayOrigin = iR.intersection + iR.normal * _shadowRayEpsilon;
+            glm::vec3 reflectedRayDir    = glm::normalize(glm::reflect(ray.direction, iR.normal));
 
+            float cosTheta = glm::dot(-ray.direction, iR.normal);
+            float coeffRatio = 1/_materials[iR.materialId].refractionIndex;
+
+            float cosPhiSquared = (1 - coeffRatio*coeffRatio * (1 - cosTheta*cosTheta));
+
+            // Reflection and transmission both occur
+            if(cosPhiSquared >= 0)
+            {
+                float cosPhi = std::sqrt(cosPhiSquared);
+
+                // Building transmitted ray
+                glm::vec3 transmittedRayOrigin = iR.intersection - iR.normal * _shadowRayEpsilon;            
+                glm::vec3 transmittedRayDir = (ray.direction + iR.normal*cosTheta)*coeffRatio - iR.normal*cosPhi;
+
+                Ray tRay(transmittedRayOrigin, transmittedRayDir);
+                tRay.mediumCoeffNow = _materials[iR.materialId].refractionIndex;
+                tRay.mediumCoeffBefore = ray.mediumCoeffNow;
+                tRay.isRefracting = true;
+                tRay.materialIdCurrentlyIn = iR.materialId;
+
+                Ray reflected(reflectedRayOrigin, reflectedRayDir);
+                reflected.isRefracting = ray.isRefracting;
+                reflected.mediumCoeffBefore = ray.mediumCoeffBefore;
+                reflected.mediumCoeffNow = ray.mediumCoeffNow;
+                reflected.materialIdCurrentlyIn = ray.materialIdCurrentlyIn;
+
+                float rRpar = (tRay.mediumCoeffNow*cosTheta - 1*cosPhi)/
+                              (tRay.mediumCoeffNow*cosTheta + 1*cosPhi);
+
+                float rPpar = (1*cosTheta - tRay.mediumCoeffNow*cosPhi)/
+                              (1*cosTheta + tRay.mediumCoeffNow*cosPhi);
+
+                float reflectionRatio = (rPpar*rPpar + rRpar*rRpar)/2;
+                float transmissionRatio = 1 - reflectionRatio;
+
+                IntersectionReport report;
+                if(TestWorldIntersection(reflected, report, 0, 2000, _intersectionTestEpsilon))
+                {
+                    result += reflectionRatio * attenuation * (ComputeAmbientComponent(report) + ComputeDiffuseSpecular(report, reflected) + RecursiveTrace(reflected, report, bounce + 1));
+                }
+                IntersectionReport report2;
+                if(TestWorldIntersection(tRay, report2, 0, 2000, _intersectionTestEpsilon))
+                {
+                    result += transmissionRatio * attenuation * (RecursiveTrace(tRay, report2, bounce + 1));
+                }
+
+            }
+            // Only reflection occurs
+            else
+            {
+                Ray reflected(reflectedRayOrigin, reflectedRayDir);
+                reflected.isRefracting = ray.isRefracting;
+                reflected.mediumCoeffBefore = ray.mediumCoeffBefore;
+                reflected.mediumCoeffNow = ray.mediumCoeffNow;
+                reflected.materialIdCurrentlyIn = ray.materialIdCurrentlyIn;
+
+                IntersectionReport report;
+                if(TestWorldIntersection(reflected, report, 0, 2000, _intersectionTestEpsilon))
+                {
+                    result += attenuation * (ComputeDiffuseSpecular(report, reflected) +
+                                                               RecursiveTrace(reflected, report, bounce + 1));
+                }                
+            }            
         }
-        // Ray is entering
+
+        
+        // Ray is exiting
         else if(glm::dot(ray.direction, iR.normal) > 0)
         {
+            glm::vec3 invertedNormal = -iR.normal;
 
-        }
+            glm::vec3 reflectedRayOrigin = iR.intersection + invertedNormal * _shadowRayEpsilon;
+            glm::vec3 reflectedRayDir    = glm::reflect(ray.direction, invertedNormal);
+
+            float cosTheta = glm::dot(-ray.direction, invertedNormal);
+            float coeffRatio = ray.mediumCoeffNow/1;
+
+            float cosPhiSquared = (1 - coeffRatio*coeffRatio * (1 - cosTheta*cosTheta));
+
+            // Reflection and transmission both occur
+            if(cosPhiSquared >= 0)
+            {
+                float cosPhi = std::sqrt(cosPhiSquared);
+
+                // Building transmitted ray
+                glm::vec3 transmittedRayOrigin = iR.intersection - invertedNormal * _shadowRayEpsilon;            
+                glm::vec3 transmittedRayDir = (ray.direction + invertedNormal*cosTheta)*coeffRatio - invertedNormal*cosPhi;
+
+                Ray tRay(transmittedRayOrigin, transmittedRayDir);
+                tRay.mediumCoeffBefore = ray.mediumCoeffNow;
+                tRay.mediumCoeffNow = 1;
+                tRay.isRefracting = false;
+                tRay.materialIdCurrentlyIn = -1;
+
+                Ray reflected(reflectedRayOrigin, reflectedRayDir);
+                reflected.isRefracting = ray.isRefracting;
+                reflected.mediumCoeffBefore = ray.mediumCoeffBefore;
+                reflected.mediumCoeffNow = ray.mediumCoeffNow;
+                reflected.materialIdCurrentlyIn = ray.materialIdCurrentlyIn;
+
+                float rRpar = (1*cosTheta - tRay.mediumCoeffBefore*cosPhi)/
+                              (1*cosTheta + tRay.mediumCoeffBefore*cosPhi);
+
+                float rPpar = (tRay.mediumCoeffBefore*cosTheta - 1*cosPhi)/
+                              (tRay.mediumCoeffBefore*cosTheta + 1*cosPhi);
+
+                float reflectionRatio = (rPpar*rPpar + rRpar*rRpar)/2;
+                float transmissionRatio = 1 - reflectionRatio;
+
+                IntersectionReport report;
+                if(TestWorldIntersection(reflected, report, 0, 2000, _intersectionTestEpsilon))
+                {
+                    result += reflectionRatio * attenuation * (RecursiveTrace(reflected, report, bounce + 1));
+                }
+                IntersectionReport report2;
+                if(TestWorldIntersection(tRay, report2, 0, 2000, _intersectionTestEpsilon))
+                {
+                    result += transmissionRatio * attenuation * (ComputeAmbientComponent(report2) + ComputeDiffuseSpecular(report2, tRay) + RecursiveTrace(tRay, report2, bounce + 1));
+                }
+
+            }
+            // Only reflection occurs
+            else
+            {
+                Ray reflected(reflectedRayOrigin, reflectedRayDir);
+                reflected.isRefracting = ray.isRefracting;
+                reflected.mediumCoeffBefore = ray.mediumCoeffBefore;
+                reflected.mediumCoeffNow = ray.mediumCoeffNow;
+                reflected.materialIdCurrentlyIn = ray.materialIdCurrentlyIn;
+
+                IntersectionReport report;
+                if(TestWorldIntersection(reflected, report, 0, 2000, _intersectionTestEpsilon))
+                {
+                    result += attenuation * (RecursiveTrace(reflected, report, bounce + 1));
+                }                
+            } 
+        } 
 
     }
 

@@ -13,6 +13,8 @@ private:
     glm::vec3 center;
     float radius;
 
+    bool solveQuadratic(const float &a, const float &b, const float &c, float &x0, float& x1);
+
 public:
 
     Sphere(glm::vec3 center, float radius, size_t materialId);
