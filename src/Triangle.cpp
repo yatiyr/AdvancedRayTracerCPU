@@ -10,7 +10,20 @@ Triangle::Triangle(glm::vec3 a, glm::vec3 b, glm::vec3 c)
     this->normal = glm::normalize(glm::cross((b-a), (c-a)));
 }
 
-bool Triangle::Intersect(const Ray& ray, IntersectionReport& report, float tmin, float tmax, float intersectionTestEpsilon)
+Triangle::Triangle(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 aNormal, glm::vec3 bNormal, glm::vec3 cNormal)
+{
+	this->a = a;
+	this->b = b;
+	this->c = c;
+
+	this->aNormal = aNormal;
+	this->bNormal = bNormal;
+	this->cNormal = cNormal;
+
+    this->normal = glm::normalize(glm::cross((b-a), (c-a)));	
+}
+
+bool Triangle::Intersect(const Ray& ray, IntersectionReport& report, float tmin, float tmax, float intersectionTestEpsilon, bool softShadingFlag)
 {
 
     report.d = FLT_MAX;
@@ -38,7 +51,17 @@ bool Triangle::Intersect(const Ray& ray, IntersectionReport& report, float tmin,
 	{
         report.d            = t;
 		report.intersection = ray.origin + t*ray.direction;
-        report.normal       = this->normal;
+
+		if(softShadingFlag)
+		{
+			float alpha = 1 - (beta + gamma);
+			glm::vec3 normal = glm::normalize(alpha*aNormal + beta*bNormal + gamma*cNormal);
+			report.normal = normal;
+		}
+		else
+		{
+        	report.normal       = this->normal;
+		}
 		report.materialId   = materialId;
         return true;
 	}

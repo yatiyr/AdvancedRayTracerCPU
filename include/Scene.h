@@ -52,6 +52,9 @@ private:
     glm::vec3               _ambientLight; 
 
     std::vector<glm::vec3>     _vertexData;
+    std::vector<glm::vec3>     _normalData;
+    std::vector<int>           _neighborCount;
+
     std::vector<Triangle>   _triangles;
     std::vector<Sphere>     _spheres;
     std::vector<Mesh>       _meshes;

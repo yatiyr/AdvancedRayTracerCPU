@@ -7,6 +7,7 @@
 #include <Sphere.h>
 #include <sstream>
 #include <happly.h>
+#include <map>
 
 
 inline void SceneReadConstants(tinyxml2::XMLNode* root, glm::vec3& _backgroundColor, float& _shadowRayEpsilon, float& _intersectionTestEpsilon, int& _maxRecursionDepth)
@@ -301,6 +302,7 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
     // Get Meshes
     auto element = root->FirstChildElement("Objects");
     element = element->FirstChildElement("Mesh");
+    
 
     while(element)
     {
@@ -312,8 +314,9 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
         child = element->FirstChildElement("Faces");
         stream << child->GetText() << std::endl;
 
-
         std::vector<Triangle> triangleList;
+        std::vector<glm::vec3> normals;
+        std::vector<int> neighborCount;
 
         if(child->Attribute("plyFile"))
         {
@@ -324,6 +327,12 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
 
             std::vector<std::array<double, 3>> vPos = plyIn.getVertexPositions();
             std::vector<std::vector<size_t>> fInd = plyIn.getFaceIndices<size_t>();
+
+            for(size_t i=0; i<vPos.size(); i++)
+            {
+                normals.push_back(glm::vec3(0.0));
+                neighborCount.push_back(0);
+            }
 
             for(size_t i=0; i<fInd.size(); i++)
             {
@@ -341,7 +350,44 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
                 c.y = vPos[fInd[i][2]][1];
                 c.z = vPos[fInd[i][2]][2];
 
-                Triangle tri(a, b, c);
+                glm::vec3 normal = glm::normalize(glm::cross((b-a), (c-a)));
+
+                normals[fInd[i][0]] += normal;
+                neighborCount[fInd[i][0]] += 1;
+
+                normals[fInd[i][1]] += normal;
+                neighborCount[fInd[i][1]] += 1;
+
+                normals[fInd[i][2]] += normal;
+                neighborCount[fInd[i][2]] += 1;                                
+
+            }
+
+            for(size_t i=0; i<normals.size(); i++)
+            {
+                normals[i] /= neighborCount[i];
+            }
+
+
+            // TODO: SONRA BAK
+
+            for(size_t i=0; i<fInd.size(); i++)
+            {
+                glm::vec3 a,b,c;
+
+                a.x = vPos[fInd[i][0]][0];
+                a.y = vPos[fInd[i][0]][1];
+                a.z = vPos[fInd[i][0]][2];
+
+                b.x = vPos[fInd[i][1]][0];
+                b.y = vPos[fInd[i][1]][1];
+                b.z = vPos[fInd[i][1]][2];                                
+
+                c.x = vPos[fInd[i][2]][0];
+                c.y = vPos[fInd[i][2]][1];
+                c.z = vPos[fInd[i][2]][2];
+
+                Triangle tri(a, b, c, normals[fInd[i][0]], normals[fInd[i][1]], normals[fInd[i][2]]);
                 triangleList.push_back(tri);
                 
             }
@@ -351,21 +397,66 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
         {
             Indices indices;
 
+            std::vector<Indices> indexVector;
+
+            for(size_t i=0; i<_vertexData.size(); i++)
+            {
+                normals.push_back(glm::vec3(0.0));
+                neighborCount.push_back(0);
+            }
+
 
             while(!(stream >> indices.a).eof())
             {
                 stream >> indices.b >> indices.c;
 
+                indexVector.push_back(indices);
+
                 glm::vec3 a = _vertexData[indices.a - 1];
                 glm::vec3 b = _vertexData[indices.b - 1];
-                glm::vec3 c = _vertexData[indices.c - 1];
+                glm::vec3 c = _vertexData[indices.c - 1];            
+                
 
-                Triangle tri(a, b, c);
+                glm::vec3 normal = glm::normalize(glm::cross((b-a), (c-a)));
+
+                normals[indices.a - 1] += normal;
+                normals[indices.b - 1] += normal;
+                normals[indices.c - 1] += normal;
+
+                neighborCount[indices.a - 1] += 1;
+                neighborCount[indices.b - 1] += 1;
+                neighborCount[indices.c - 1] += 1;
+
+            }
+
+            for(size_t i=0; i<normals.size(); i++)
+            {
+                normals[i] /= neighborCount[i];
+            }
+
+
+            for(size_t i=0; i<indexVector.size(); i++)
+            {
+
+                glm::vec3 a = _vertexData[indexVector[i].a - 1];
+                glm::vec3 b = _vertexData[indexVector[i].b - 1];                
+                glm::vec3 c = _vertexData[indexVector[i].c - 1];                
+
+                Triangle tri(a, b, c, normals[indexVector[i].a - 1], normals[indexVector[i].b - 1], normals[indexVector[i].c - 1]);
+/*
+                _normalData[indices.a - 1] += tri.normal;
+                _normalData[indices.b - 1] += tri.normal;
+                _normalData[indices.c - 1] += tri.normal;
+
+                _neighborCount[indices.a - 1] += 1;
+                _neighborCount[indices.b - 1] += 1;
+                _neighborCount[indices.c - 1] += 1;
+*/
                 triangleList.push_back(tri);
             }
         }
 
-        Mesh m(triangleList, materialId - 1);
+        Mesh m(triangleList, materialId - 1, true);
         _meshes.push_back(m);
 
         stream.clear();

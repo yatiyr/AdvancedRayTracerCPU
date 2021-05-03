@@ -13,8 +13,10 @@ private:
     BVH* bvhRoot;
     int materialId;
 
+    bool softShadingFlag;
+
 public:
-    Mesh(const std::vector<Triangle>& triangleList, size_t materialId);
+    Mesh(const std::vector<Triangle>& triangleList, size_t materialId, bool softShadingFlag);
     bool Intersect(const Ray& ray, IntersectionReport& report, float tmin, float tmax, float intersectionEpsilon);
 };
 

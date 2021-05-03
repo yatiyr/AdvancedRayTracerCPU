@@ -10,7 +10,7 @@
             <Up>0 0 1</Up>
             <FovY>32</FovY>
             <NearDistance>1</NearDistance>
-            <ImageResolution>12000 9000</ImageResolution>
+            <ImageResolution>8000 4000</ImageResolution>
             <ImageName>other_dragon.png</ImageName>
         </Camera>
     </Cameras>

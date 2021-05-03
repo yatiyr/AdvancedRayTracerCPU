@@ -1,5 +1,5 @@
 <Scene>
-    <BackgroundColor>0.5 0 0.5</BackgroundColor>
+    <BackgroundColor>0 0 0</BackgroundColor>
     <MaxRecursionDepth>6</MaxRecursionDepth>
 
     <Cameras>
@@ -9,7 +9,7 @@
             <Up>0 1 0</Up>
             <NearPlane>-0.1 0.1 -0.1 0.1</NearPlane>
             <NearDistance>1</NearDistance>
-            <ImageResolution>512 512</ImageResolution>
+            <ImageResolution>4096 4096</ImageResolution>
             <NumSamples>1</NumSamples>
             <ImageName>bunny.png</ImageName>
         </Camera>
@@ -24,13 +24,11 @@
     </Lights>
 
     <Materials>
-        <Material id="1" type="dielectric">
+        <Material id="1">
             <AmbientReflectance>0.200000 0.200000 0.200000</AmbientReflectance>
             <DiffuseReflectance>0.200000 0.200000 0.200000</DiffuseReflectance>
             <SpecularReflectance>0.500000 0.500000 0.500000</SpecularReflectance>
             <PhongExponent>3</PhongExponent>
-            <AbsorptionCoefficient>0.01 0.01 0.01</AbsorptionCoefficient>
-            <RefractionIndex>1.5</RefractionIndex>
         </Material>
     </Materials>
 

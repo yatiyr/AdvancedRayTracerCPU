@@ -160,7 +160,7 @@ bool Scene::TestWorldIntersection(const Ray& ray, IntersectionReport& report, fl
     for(size_t i=0; i < _triangles.size(); i++)
     {
         IntersectionReport r;
-        if(_triangles[i].Intersect(ray, r, tmin, tmax, intersectionTestEpsilon))
+        if(_triangles[i].Intersect(ray, r, tmin, tmax, intersectionTestEpsilon, false))
         {
             result = true;
             report = r.d < report.d ? r : report;                    
@@ -203,7 +203,7 @@ bool Scene::ShadowRayIntersection(float tmin, float tmax, float intersectionTest
     for(size_t i=0; i<_triangles.size(); i++)
     {
         IntersectionReport r;
-        if(_triangles[i].Intersect(ray, r, tmin, tmax, intersectionTestEpsilon) && r.d < dist)
+        if(_triangles[i].Intersect(ray, r, tmin, tmax, intersectionTestEpsilon, false) && r.d < dist)
             return true;
     }
 
