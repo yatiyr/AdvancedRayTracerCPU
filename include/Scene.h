@@ -36,6 +36,10 @@ class Scene
 {
 private:
 
+    std::vector<glm::mat4> _translationMatrices;
+    std::vector<glm::mat4> _rotationMatrices;
+    std::vector<glm::mat4> _scalingMatrices;
+
     tinyxml2::XMLNode* inputRoot;
 
     int worksize;

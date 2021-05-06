@@ -4,7 +4,7 @@
 int main(int argc, char** argv)
 {
 
-    Renderer RnDr(argv[1]);
+    Renderer RnDr("hw3/spheres_dof.xml");
 
     try
     {    

@@ -5,9 +5,9 @@
 #include <vector>
 #include <Triangle.h>
 #include <Structures.h>
+#include <Object.h>
 
-
-class Mesh
+class Mesh : public Object
 {
 private:
     BVH* bvhRoot;

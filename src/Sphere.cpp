@@ -30,21 +30,26 @@ bool Sphere::solveQuadratic(const float &a, const float &b, const float &c, floa
         
 }
 
-bool Sphere::Intersect(const Ray& r, IntersectionReport& report, float tmin, float tmax)
+bool Sphere::Intersect(const Ray& r, IntersectionReport& report, float tmin, float tmax, float intersectionEpsilon)
 {
+
+    glm::vec3 newOrigin = (transformationMatrixInversed*glm::vec4(r.origin, 1.0f));
+    glm::vec3 newDirection = (transformationMatrixInversed*glm::vec4(r.direction, 0.0f));
+    Ray newRay(newOrigin, newDirection);
+
     report.intersection = glm::vec3(-FLT_MAX);
     report.d            = FLT_MAX;
 
-    float discriminant = pow(glm::dot(r.direction, (r.origin - center)), 2) -
-                         dot(r.direction, r.direction) * (glm::dot(r.origin - center, r.origin - center) -
+    float discriminant = pow(glm::dot(newRay.direction, (newRay.origin - center)), 2) -
+                         dot(newRay.direction, newRay.direction) * (glm::dot(newRay.origin - center, newRay.origin - center) -
                          radius * radius);
 
     float t;
 
     if(discriminant >= 0)
     {
-        float t1 = -(glm::dot(r.direction, (r.origin - center)) + sqrt(discriminant)) / glm::dot(r.direction, r.direction);
-        float t2 = -(glm::dot(r.direction, (r.origin - center)) - sqrt(discriminant)) / glm::dot(r.direction, r.direction);
+        float t1 = -(glm::dot(newRay.direction, (newRay.origin - center)) + sqrt(discriminant)) / glm::dot(newRay.direction, newRay.direction);
+        float t2 = -(glm::dot(newRay.direction, (newRay.origin - center)) - sqrt(discriminant)) / glm::dot(newRay.direction, newRay.direction);
 
         t = std::min(t1, t2);
 
@@ -57,7 +62,9 @@ bool Sphere::Intersect(const Ray& r, IntersectionReport& report, float tmin, flo
             report.d            = t;
             report.intersection = r.origin + t*r.direction;
             report.materialId   = materialId;
-            report.normal       = glm::normalize(report.intersection - center);
+            glm::vec3 normal = (newRay.origin + t*newRay.direction) - center;
+            report.normal       = transformationMatrixInverseTransposed * glm::vec4(normal, 0.0f);
+            report.normal = glm::normalize(report.normal);
             return true;
         }
       

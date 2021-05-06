@@ -2,11 +2,11 @@
 #define __SPHERE_H__
 
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <Structures.h>
+#include <Object.h>
 
-class Sphere
+class Sphere : public Object
 {
 private:
     size_t materialId;
@@ -18,7 +18,7 @@ private:
 public:
 
     Sphere(glm::vec3 center, float radius, size_t materialId);
-    bool Intersect(const Ray& r, IntersectionReport& report, float tmin, float tmax);
+    bool Intersect(const Ray& r, IntersectionReport& report, float tmin, float tmax, float intersectionEpsilon);
 
 };
 

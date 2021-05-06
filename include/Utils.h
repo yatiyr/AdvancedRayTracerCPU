@@ -10,6 +10,19 @@
 #include <map>
 
 
+inline std::vector<std::string> split(std::string text)
+{
+
+    std::vector<std::string> vec;
+    std::stringstream ss(text);
+    for(std::string s; ss >> s;)
+    {
+        vec.push_back(s);
+    }
+
+    return vec;
+}
+
 inline void SceneReadConstants(tinyxml2::XMLNode* root, glm::vec3& _backgroundColor, float& _shadowRayEpsilon, float& _intersectionTestEpsilon, int& _maxRecursionDepth)
 {
     std::stringstream stream;
@@ -296,7 +309,7 @@ inline void SceneReadVertexData(tinyxml2::XMLNode* root, std::vector<glm::vec3>&
     stream.clear();
 }
 
-inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes, std::vector<glm::vec3>& _vertexData)
+inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes, std::vector<glm::vec3>& _vertexData, std::vector<glm::mat4>& _rotationMatrices, std::vector<glm::mat4>& _scalingMatrices, std::vector<glm::mat4>& _translationMatrices)
 {
     std::stringstream stream;
     // Get Meshes
@@ -443,20 +456,45 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
                 glm::vec3 c = _vertexData[indexVector[i].c - 1];                
 
                 Triangle tri(a, b, c, normals[indexVector[i].a - 1], normals[indexVector[i].b - 1], normals[indexVector[i].c - 1]);
-/*
-                _normalData[indices.a - 1] += tri.normal;
-                _normalData[indices.b - 1] += tri.normal;
-                _normalData[indices.c - 1] += tri.normal;
 
-                _neighborCount[indices.a - 1] += 1;
-                _neighborCount[indices.b - 1] += 1;
-                _neighborCount[indices.c - 1] += 1;
-*/
                 triangleList.push_back(tri);
             }
         }
 
-        Mesh m(triangleList, materialId - 1, true);
+        Mesh m(triangleList, materialId - 1, false);
+
+        child = element->FirstChildElement("Transformations");
+        glm::mat4 model(1.0f);        
+        if(child)
+        {
+            std::vector<std::string> transformations = split(std::string(child->GetText()));
+            for(size_t i=0; i<transformations.size(); i++)
+            {
+                char type = transformations[i][0];
+                std::string::iterator it = transformations[i].begin();
+                it++;
+                std::string idString(it, transformations[i].end());
+                std::stringstream strToInt(idString);
+                int id = 0;
+                strToInt >> id;
+
+                if(type == 'r')
+                {
+                    model =  _rotationMatrices[id - 1] * model;
+                }
+                else if(type == 't')
+                {
+                    model = _translationMatrices[id - 1] * model;
+                }
+                else if(type == 's')
+                {
+                    model = _scalingMatrices[id - 1] * model;
+                }
+            }
+        }
+        m.transformationMatrix = model;
+        m.transformationMatrixInversed = glm::inverse(model);
+        m.transformationMatrixInverseTransposed = glm::transpose(m.transformationMatrixInversed);
         _meshes.push_back(m);
 
         stream.clear();
@@ -466,7 +504,7 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
 }
 
 
-inline void SceneReadSpheres(tinyxml2::XMLNode* root, std::vector<Sphere>& _spheres, std::vector<glm::vec3>& _vertexData)
+inline void SceneReadSpheres(tinyxml2::XMLNode* root, std::vector<Sphere>& _spheres, std::vector<glm::vec3>& _vertexData, std::vector<glm::mat4>& _rotationMatrices, std::vector<glm::mat4>& _scalingMatrices, std::vector<glm::mat4>& _translationMatrices)
 {
     std::stringstream stream;
     // Get Spheres
@@ -494,13 +532,46 @@ inline void SceneReadSpheres(tinyxml2::XMLNode* root, std::vector<Sphere>& _sphe
         glm::vec3 centerVertex = _vertexData[centerVertexId - 1];
 
         Sphere sphere(centerVertex, radius, materialId - 1);
+
+        child = element->FirstChildElement("Transformations");
+        glm::mat4 model(1.0f);        
+        if(child)
+        {
+            std::vector<std::string> transformations = split(std::string(child->GetText()));
+            for(size_t i=0; i<transformations.size(); i++)
+            {
+                char type = transformations[i][0];
+                std::string::iterator it = transformations[i].begin();
+                it++;
+                std::string idString(it, transformations[i].end());
+                std::stringstream strToInt(idString);
+                int id = 0;
+                strToInt >> id;
+
+                if(type == 'r')
+                {
+                    model =  _rotationMatrices[id - 1] * model;
+                }
+                else if(type == 't')
+                {
+                    model = _translationMatrices[id - 1] * model;
+                }
+                else if(type == 's')
+                {
+                    model = _scalingMatrices[id - 1] * model;
+                }
+            }
+        }
+        sphere.transformationMatrix = model;
+        sphere.transformationMatrixInversed = glm::inverse(model);
+        sphere.transformationMatrixInverseTransposed = glm::transpose(sphere.transformationMatrixInversed);
         _spheres.push_back(sphere);
         element = element->NextSiblingElement("Sphere");
     }
     stream.clear();
 }
 
-inline void SceneReadTriangles(tinyxml2::XMLNode* root, std::vector<Triangle>& _triangles, std::vector<glm::vec3>& _vertexData)
+inline void SceneReadTriangles(tinyxml2::XMLNode* root, std::vector<Triangle>& _triangles, std::vector<glm::vec3>& _vertexData, std::vector<glm::mat4>& _rotationMatrices, std::vector<glm::mat4>& _scalingMatrices, std::vector<glm::mat4>& _translationMatrices)
 {
     std::stringstream stream;
     // Get Triangles
@@ -526,11 +597,117 @@ inline void SceneReadTriangles(tinyxml2::XMLNode* root, std::vector<Triangle>& _
         Triangle tri(a, b, c);
         tri.materialId = materialId - 1;
 
+
+        child = element->FirstChildElement("Transformations");
+        glm::mat4 model(1.0f);        
+        if(child)
+        {
+            std::vector<std::string> transformations = split(std::string(child->GetText()));
+            for(size_t i=0; i<transformations.size(); i++)
+            {
+                char type = transformations[i][0];
+                std::string::iterator it = transformations[i].begin();
+                it++;
+                std::string idString(it, transformations[i].end());
+                std::stringstream strToInt(idString);
+                int id = 0;
+                strToInt >> id;
+
+                if(type == 'r')
+                {
+                    model =  _rotationMatrices[id - 1] * model;
+                }
+                else if(type == 't')
+                {
+                    model = _translationMatrices[id - 1] * model;
+                }
+                else if(type == 's')
+                {
+                    model = _scalingMatrices[id - 1] * model;
+                }
+            }
+        }
+        tri.transformationMatrix = model;
+        tri.transformationMatrixInversed = glm::inverse(model);
+        tri.transformationMatrixInverseTransposed = glm::transpose(tri.transformationMatrixInversed);
         _triangles.push_back(tri);
         element = element->NextSiblingElement("Triangle");
     }
 }
 
+
+inline void SceneReadTranslations(tinyxml2::XMLElement* element, std::vector<glm::mat4>& _translationMatrices)
+{
+    std::stringstream stream;
+    auto translation = element->FirstChildElement("Translation");
+
+    while(translation)
+    {
+        stream << translation->GetText();
+        float x,y,z;
+        stream >> x >> y >> z;
+        glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, z));
+        _translationMatrices.push_back(translationMatrix);
+
+        translation = translation->NextSiblingElement("Translation");
+        stream.clear();
+    }
+
+}
+
+inline void SceneReadRotations(tinyxml2::XMLElement* element, std::vector<glm::mat4>& _rotationMatrices)
+{
+    std::stringstream stream;
+    auto rotation = element->FirstChildElement("Rotation");
+
+    while(rotation)
+    {
+        stream << rotation->GetText();
+        float angle, x, y, z;
+        stream >> angle >> x >> y >> z;
+        glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(angle), glm::vec3(x, y, z));
+        _rotationMatrices.push_back(rotationMatrix);
+
+        rotation = rotation->NextSiblingElement("Rotation");
+        stream.clear();        
+    }
+
+}
+
+inline void SceneReadScalings(tinyxml2::XMLElement* element, std::vector<glm::mat4>& _scalingMatrices)
+{
+    std::stringstream stream;
+    auto scaling = element->FirstChildElement("Scaling");
+
+    while(scaling)
+    {
+        stream << scaling->GetText();
+        float x, y, z;
+        stream >> x >> y >> z;
+        glm::mat4 scalingMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(x, y, z));
+        _scalingMatrices.push_back(scalingMatrix);
+
+        scaling = scaling->NextSiblingElement("Scaling");
+        stream.clear();        
+    }
+
+}
+
+inline void SceneReadTransformations(tinyxml2::XMLNode* root, std::vector<glm::mat4>& _translationMatrices,
+                                                              std::vector<glm::mat4>& _rotationMatrices,
+                                                              std::vector<glm::mat4>& _scalingMatrices)
+{
+
+    auto element = root->FirstChildElement("Transformations");
+
+    if(element)
+    {
+        SceneReadTranslations(element, _translationMatrices);
+        SceneReadRotations(element, _rotationMatrices);
+        SceneReadScalings(element, _scalingMatrices);
+    }
+
+}
 
 inline Ray* RefTransRays(const Ray& ray, const Material& hitMaterial)
 {

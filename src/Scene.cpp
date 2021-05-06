@@ -24,9 +24,10 @@ Scene::Scene(const std::string& filepath)
     SceneReadLights(root, _pointLights, _ambientLight);
     SceneReadMaterials(root, _materials);
     SceneReadVertexData(root, _vertexData);
-    SceneReadMeshes(root, _meshes, _vertexData);
-    SceneReadSpheres(root, _spheres, _vertexData);
-    SceneReadTriangles(root, _triangles, _vertexData);
+    SceneReadTransformations(root, _translationMatrices, _rotationMatrices, _scalingMatrices);
+    SceneReadMeshes(root, _meshes, _vertexData, _rotationMatrices, _scalingMatrices, _translationMatrices);
+    SceneReadSpheres(root, _spheres, _vertexData, _rotationMatrices, _scalingMatrices, _translationMatrices);
+    SceneReadTriangles(root, _triangles, _vertexData, _rotationMatrices, _scalingMatrices, _translationMatrices);
 
     _activeCamera = _cameras[0];
 
@@ -35,7 +36,7 @@ Scene::Scene(const std::string& filepath)
     worksize = _imageHeight * _imageWidth;
     _image = new float[_imageHeight*_imageWidth*4];
 
-    coreSize = std::thread::hardware_concurrency();
+    coreSize = 1;//std::thread::hardware_concurrency();
     count = 0;
 
     
@@ -160,7 +161,7 @@ bool Scene::TestWorldIntersection(const Ray& ray, IntersectionReport& report, fl
     for(size_t i=0; i < _triangles.size(); i++)
     {
         IntersectionReport r;
-        if(_triangles[i].Intersect(ray, r, tmin, tmax, intersectionTestEpsilon, false))
+        if(_triangles[i].Intersect(ray, r, tmin, tmax, intersectionTestEpsilon))
         {
             result = true;
             report = r.d < report.d ? r : report;                    
@@ -170,7 +171,7 @@ bool Scene::TestWorldIntersection(const Ray& ray, IntersectionReport& report, fl
     for(size_t i=0; i<_spheres.size(); i++)
     {
         IntersectionReport r;
-        if(_spheres[i].Intersect(ray, r, tmin, tmax))
+        if(_spheres[i].Intersect(ray, r, tmin, tmax, intersectionTestEpsilon))
         {
             result = true;
             report = r.d < report.d ? r : report;              
@@ -203,14 +204,14 @@ bool Scene::ShadowRayIntersection(float tmin, float tmax, float intersectionTest
     for(size_t i=0; i<_triangles.size(); i++)
     {
         IntersectionReport r;
-        if(_triangles[i].Intersect(ray, r, tmin, tmax, intersectionTestEpsilon, false) && r.d < dist)
+        if(_triangles[i].Intersect(ray, r, tmin, tmax, intersectionTestEpsilon) && r.d < dist)
             return true;
     }
 
     for(size_t i=0; i<_spheres.size(); i++)
     {
         IntersectionReport r;
-        if(_spheres[i].Intersect(ray, r, tmin, tmax) && r.d < dist)
+        if(_spheres[i].Intersect(ray, r, tmin, tmax, intersectionTestEpsilon) && r.d < dist)
             return true;
     }
 

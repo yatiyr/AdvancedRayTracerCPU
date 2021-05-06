@@ -2,8 +2,9 @@
 #define __TRIANGLE_H__
 
 #include <Structures.h>
+#include <Object.h>
 
-class Triangle
+class Triangle : public Object
 {
 private:
 
@@ -23,7 +24,8 @@ public:
     Triangle(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 aNormal, glm::vec3 bNormal, glm::vec3 cNormal);
     
     //Triangle(glm::vec3 a, glm::vec3 b, glm::vec3 c, size_t materialId);
-    bool Intersect(const Ray& ray, IntersectionReport& report, float tmin, float tmax, float intersectionEpsilon, bool softShadingFlag);
+    bool Intersect(const Ray& ray, IntersectionReport& report, float tmin, float tmax, float intersectionEpsilon);    
+    bool Intersect(const Ray& ray, IntersectionReport& report, float tmin, float tmax, float intersectionEpsilon, bool softShadingFlag, const glm::mat4& transformationMatrixTransposed);
     bool FasterIntersect(const Ray& ray, IntersectionReport& report, float tmin, float tmax, float intersectionEpsilon);
     
     glm::vec3 GiveCenter() const;

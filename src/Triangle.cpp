@@ -23,7 +23,48 @@ Triangle::Triangle(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 aNormal, glm
     this->normal = glm::normalize(glm::cross((b-a), (c-a)));	
 }
 
-bool Triangle::Intersect(const Ray& ray, IntersectionReport& report, float tmin, float tmax, float intersectionTestEpsilon, bool softShadingFlag)
+bool Triangle::Intersect(const Ray& ray, IntersectionReport& report, float tmin, float tmax, float intersectionTestEpsilon)
+{
+
+    glm::vec3 newOrigin = (transformationMatrixInversed*glm::vec4(ray.origin, 1.0f));
+    glm::vec3 newDirection = (transformationMatrixInversed*glm::vec4(ray.direction, 0.0f));
+    Ray newRay(newOrigin, newDirection);
+
+    report.d = FLT_MAX;
+
+	float detA = glm::determinant(glm::mat3(glm::vec3(a.x - b.x, a.y - b.y, a.z - b.z),
+	                              glm::vec3(a.x - c.x, a.y - c.y, a.z - c.z),
+								  glm::vec3(newRay.direction.x, newRay.direction.y, newRay.direction.z)));
+
+
+	float beta = glm::determinant(glm::mat3(glm::vec3(a.x - newRay.origin.x, a.y - newRay.origin.y, a.z - newRay.origin.z),
+	                              glm::vec3(a.x - c.x, a.y - c.y, a.z - c.z),
+								  glm::vec3(newRay.direction.x, newRay.direction.y, newRay.direction.z)))/detA;
+
+	float gamma = glm::determinant(glm::mat3(glm::vec3(a.x - b.x, a.y - b.y, a.z - b.z),
+	                               glm::vec3(a.x - newRay.origin.x, a.y - newRay.origin.y, a.z - newRay.origin.z),
+								   glm::vec3(newRay.direction.x, newRay.direction.y, newRay.direction.z)))/detA;
+
+
+	float t = glm::determinant(glm::mat3(glm::vec3(a.x - b.x, a.y - b.y, a.z - b.z),
+	                           glm::vec3(a.x - c.x, a.y - c.y, a.z - c.z),
+							   glm::vec3(a.x - newRay.origin.x, a.y - newRay.origin.y, a.z - newRay.origin.z)))/detA;
+
+    
+	if((beta + gamma <= 1 + intersectionTestEpsilon) && (beta >= -intersectionTestEpsilon) && (gamma >= -intersectionTestEpsilon) && t>tmin && t<tmax)
+	{
+        report.d            = t;
+		report.intersection = ray.origin + t*ray.direction;
+        report.normal       = glm::normalize(this->transformationMatrixInverseTransposed * glm::vec4(this->normal, 0.0f));
+
+		report.materialId   = materialId;
+        return true;
+	}
+
+	return false;   	
+}
+
+bool Triangle::Intersect(const Ray& ray, IntersectionReport& report, float tmin, float tmax, float intersectionTestEpsilon, bool softShadingFlag, const glm::mat4& transformationMatrixInverseTransposed)
 {
 
     report.d = FLT_MAX;
@@ -56,11 +97,11 @@ bool Triangle::Intersect(const Ray& ray, IntersectionReport& report, float tmin,
 		{
 			float alpha = 1 - (beta + gamma);
 			glm::vec3 normal = glm::normalize(alpha*aNormal + beta*bNormal + gamma*cNormal);
-			report.normal = normal;
+			report.normal = glm::normalize(transformationMatrixInverseTransposed * glm::vec4(this->normal, 0.0f));
 		}
 		else
 		{
-        	report.normal       = this->normal;
+        	report.normal       = glm::normalize(transformationMatrixInverseTransposed * glm::vec4(this->normal, 0.0f));
 		}
 		report.materialId   = materialId;
         return true;
