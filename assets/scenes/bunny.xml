@@ -9,7 +9,7 @@
             <Up>0 1 0</Up>
             <NearPlane>-0.1 0.1 -0.1 0.1</NearPlane>
             <NearDistance>1</NearDistance>
-            <ImageResolution>4096 4096</ImageResolution>
+            <ImageResolution>512 512</ImageResolution>
             <NumSamples>1</NumSamples>
             <ImageName>bunny.png</ImageName>
         </Camera>

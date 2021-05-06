@@ -16,6 +16,8 @@
 #include <Sphere.h>
 #include <Triangle.h>
 #include <Mesh.h>
+#include <MeshInstance.h>
+
 #include <omp.h>
 #include <thread>
 #include <atomic>

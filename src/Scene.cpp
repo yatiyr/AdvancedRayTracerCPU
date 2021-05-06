@@ -36,7 +36,7 @@ Scene::Scene(const std::string& filepath)
     worksize = _imageHeight * _imageWidth;
     _image = new float[_imageHeight*_imageWidth*4];
 
-    coreSize = 1;//std::thread::hardware_concurrency();
+    coreSize = std::thread::hardware_concurrency();
     count = 0;
 
     
