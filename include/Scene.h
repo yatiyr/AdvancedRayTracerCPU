@@ -17,6 +17,7 @@
 #include <Triangle.h>
 #include <Mesh.h>
 #include <MeshInstance.h>
+#include <Object.h>
 
 #include <omp.h>
 #include <thread>
@@ -24,6 +25,9 @@
 #include <Timer.h>
 #include <future>
 #include <iomanip>
+
+#include <RandomGenerator.h>
+#include <random>
 
 
 const double EULER =  2.71828182845904523536;
@@ -37,6 +41,11 @@ struct WorkGroup
 class Scene
 {
 private:
+
+    RandomGenerator* randomVariableGenerator;
+
+    int _sampleNumber;
+    std::vector<Sample> samples;
 
     std::vector<glm::mat4> _translationMatrices;
     std::vector<glm::mat4> _rotationMatrices;
@@ -61,9 +70,13 @@ private:
     std::vector<glm::vec3>     _normalData;
     std::vector<int>           _neighborCount;
 
-    std::vector<Triangle>   _triangles;
-    std::vector<Sphere>     _spheres;
-    std::vector<Mesh>       _meshes;
+    std::vector<Triangle>     _triangles;
+    std::vector<Sphere>       _spheres;
+    std::vector<Mesh>         _meshes;
+    std::vector<MeshInstance> _meshInstances;
+
+
+    std::vector<Object*> _objectPointerVector;
 
     std::vector<PointLight> _pointLights;
 
@@ -80,6 +93,7 @@ private:
     float* _image;
 
     Ray ComputePrimaryRay(int i, int j);
+    std::vector<Ray> ComputePrimaryRays(int i, int j);
     void ClearImage();
 
 

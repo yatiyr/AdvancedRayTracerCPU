@@ -4,6 +4,7 @@
 #include <Structures.h>
 #include <Mesh.h>
 #include <Triangle.h>
+#include <MeshInstance.h>
 #include <Sphere.h>
 #include <sstream>
 #include <happly.h>
@@ -158,6 +159,15 @@ inline void SceneReadCameras(tinyxml2::XMLNode* root, std::vector<Camera>& _came
         stream >> imageName;
         imageNames.push_back(imageName);
         _imageName = imageName;
+
+        auto child = element->FirstChildElement("NumSamples");
+        int sampleNumber = 1;
+        if(child)
+        {
+            stream << child->GetText() << std::endl;
+            stream >> sampleNumber;
+        }
+        camera.sampleNumber = sampleNumber;
 
         _cameras.push_back(camera);
         element = element->NextSiblingElement("Camera");
@@ -503,6 +513,90 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
     stream.clear();
 }
 
+inline void SceneReadMeshInstances(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes, std::vector<MeshInstance>& _meshInstances, std::vector<glm::mat4>& _rotationMatrices, std::vector<glm::mat4>& _scalingMatrices, std::vector<glm::mat4>& _translationMatrices)
+{
+    std::stringstream stream;
+    // Get Meshes
+    auto element = root->FirstChildElement("Objects");
+    element = element->FirstChildElement("MeshInstance");
+
+
+    while(element)
+    {
+        size_t materialId;
+        auto child = element->FirstChildElement("Material");
+        stream << child->GetText() << std::endl;
+        stream >> materialId;
+
+        int meshId;
+        std::string resetTransform;
+        MeshInstance meshInstance;
+
+        child = element->FirstChildElement("Transformations");
+        glm::mat4 model(1.0f);        
+        if(child)
+        {
+            std::vector<std::string> transformations = split(std::string(child->GetText()));
+            for(size_t i=0; i<transformations.size(); i++)
+            {
+                char type = transformations[i][0];
+                std::string::iterator it = transformations[i].begin();
+                it++;
+                std::string idString(it, transformations[i].end());
+                std::stringstream strToInt(idString);
+                int id = 0;
+                strToInt >> id;
+
+                if(type == 'r')
+                {
+                    model =  _rotationMatrices[id - 1] * model;
+                }
+                else if(type == 't')
+                {
+                    model = _translationMatrices[id - 1] * model;
+                }
+                else if(type == 's')
+                {
+                    model = _scalingMatrices[id - 1] * model;
+                }
+            }
+        }     
+
+        if(element->Attribute("baseMeshId") && element->Attribute("resetTransform"))
+        {
+            stream << element->Attribute("baseMeshId");
+            stream >> meshId;
+
+            meshInstance.mesh = &_meshes[meshId - 1];
+
+            resetTransform = element->Attribute("resetTransform");
+            
+            if(resetTransform == "true")
+            {
+                meshInstance.transformationMatrix = model;
+                meshInstance.transformationMatrixInversed = glm::inverse(model);
+                meshInstance.transformationMatrixInverseTransposed = glm::transpose(meshInstance.transformationMatrixInversed);
+            }
+            else if(resetTransform == "false")
+            {
+                model = model * meshInstance.mesh->transformationMatrix;
+                meshInstance.transformationMatrix = model;
+                meshInstance.transformationMatrixInversed = glm::inverse(model);
+                meshInstance.transformationMatrixInverseTransposed = glm::transpose(meshInstance.transformationMatrixInversed);
+
+            }
+
+            _meshInstances.push_back(meshInstance);
+        }
+
+        element = element->NextSiblingElement("MeshInstance");
+
+
+
+    }
+    stream.clear();
+}
+
 
 inline void SceneReadSpheres(tinyxml2::XMLNode* root, std::vector<Sphere>& _spheres, std::vector<glm::vec3>& _vertexData, std::vector<glm::mat4>& _rotationMatrices, std::vector<glm::mat4>& _scalingMatrices, std::vector<glm::mat4>& _translationMatrices)
 {
@@ -717,5 +811,29 @@ inline Ray* RefTransRays(const Ray& ray, const Material& hitMaterial)
 }
 
 
+inline void ScenePopulateObjects(std::vector<Object*>& _objects, std::vector<Mesh>& _meshes, std::vector<MeshInstance>& _meshInstances, std::vector<Sphere>& _spheres, std::vector<Triangle>& _triangles)
+{
+
+    for(size_t i=0; i<_meshes.size(); i++)
+    {
+        _objects.push_back(&_meshes[i]);
+    }
+
+    for(size_t i=0; i<_meshInstances.size(); i++)
+    {
+        _objects.push_back(&_meshInstances[i]);
+    }
+
+    for(size_t i=0; i<_spheres.size(); i++)
+    {
+        _objects.push_back(&_spheres[i]);
+    }
+
+    for(size_t i=0; i<_triangles.size(); i++)
+    {
+        _objects.push_back(&_triangles[i]);
+    }            
+
+}
 
 #endif /* __UTILS_H__ */

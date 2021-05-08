@@ -26,8 +26,11 @@ Scene::Scene(const std::string& filepath)
     SceneReadVertexData(root, _vertexData);
     SceneReadTransformations(root, _translationMatrices, _rotationMatrices, _scalingMatrices);
     SceneReadMeshes(root, _meshes, _vertexData, _rotationMatrices, _scalingMatrices, _translationMatrices);
+    SceneReadMeshInstances(root, _meshes, _meshInstances, _rotationMatrices, _scalingMatrices, _translationMatrices);
     SceneReadSpheres(root, _spheres, _vertexData, _rotationMatrices, _scalingMatrices, _translationMatrices);
     SceneReadTriangles(root, _triangles, _vertexData, _rotationMatrices, _scalingMatrices, _translationMatrices);
+
+    ScenePopulateObjects(_objectPointerVector, _meshes, _meshInstances, _spheres, _triangles);
 
     _activeCamera = _cameras[0];
 
@@ -39,6 +42,7 @@ Scene::Scene(const std::string& filepath)
     coreSize = std::thread::hardware_concurrency();
     count = 0;
 
+    randomVariableGenerator = new RandomGenerator(0.0f, 1.0f);
     
 }
 
@@ -143,11 +147,33 @@ Ray Scene::ComputePrimaryRay(int i, int j)
 }
 
 
+std::vector<Ray> Scene::ComputePrimaryRays(int i, int j)
+{
+    std::vector<Ray> result;
+
+
+
+
+
+    return result;
+}
+
 bool Scene::TestWorldIntersection(const Ray& ray, IntersectionReport& report, float tmin, float tmax, float intersectionTestEpsilon)
 {
     report.d = FLT_MAX;
     bool result = false;
 
+    for(auto object : _objectPointerVector)
+    {
+        IntersectionReport r;
+        if(object->Intersect(ray, r, tmin, tmax, intersectionTestEpsilon))
+        {
+            result = true;
+            report = r.d < report.d ? r : report;
+        }
+    }
+
+/*
     for(size_t i=0; i< _meshes.size(); i++)
     {
         IntersectionReport r;
@@ -177,7 +203,7 @@ bool Scene::TestWorldIntersection(const Ray& ray, IntersectionReport& report, fl
             report = r.d < report.d ? r : report;              
         }
     }
-
+*/
 
     return result;
 }
@@ -193,6 +219,14 @@ bool Scene::ShadowRayIntersection(float tmin, float tmax, float intersectionTest
     float dist = glm::length(light.position - report.intersection);
 
 
+    for(auto object : _objectPointerVector)
+    {
+        IntersectionReport r;
+        if(object->Intersect(ray, r, tmin, tmax, intersectionTestEpsilon) && r.d < dist)
+            return true;
+    }
+
+    /*
     for(size_t i=0; i<_meshes.size(); i++)
     {
         IntersectionReport r;
@@ -214,7 +248,7 @@ bool Scene::ShadowRayIntersection(float tmin, float tmax, float intersectionTest
         if(_spheres[i].Intersect(ray, r, tmin, tmax, intersectionTestEpsilon) && r.d < dist)
             return true;
     }
-
+*/
     return false;
 }
 
@@ -382,12 +416,12 @@ glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, in
                 IntersectionReport report;
                 if(TestWorldIntersection(reflected, report, 0, 2000, _intersectionTestEpsilon))
                 {
-                    result += reflectionRatio * attenuation * (ComputeAmbientComponent(report) + ComputeDiffuseSpecular(report, reflected) + RecursiveTrace(reflected, report, bounce + 1));
+                    result += reflectionRatio * (ComputeAmbientComponent(report) + ComputeDiffuseSpecular(report, reflected) + RecursiveTrace(reflected, report, bounce + 1));
                 }
                 IntersectionReport report2;
                 if(TestWorldIntersection(tRay, report2, 0, 2000, _intersectionTestEpsilon))
                 {
-                    result += transmissionRatio * attenuation * (RecursiveTrace(tRay, report2, bounce + 1));
+                    result += transmissionRatio * (RecursiveTrace(tRay, report2, bounce + 1));
                 }
 
             }
@@ -403,7 +437,7 @@ glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, in
                 IntersectionReport report;
                 if(TestWorldIntersection(reflected, report, 0, 2000, _intersectionTestEpsilon))
                 {
-                    result += attenuation * (ComputeDiffuseSpecular(report, reflected) +
+                    result += (ComputeDiffuseSpecular(report, reflected) +
                                                                RecursiveTrace(reflected, report, bounce + 1));
                 }                
             }            

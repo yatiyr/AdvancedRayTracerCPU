@@ -19,6 +19,7 @@ struct Camera
     alignas(16) glm::vec4 nearPlane;
     glm::vec2 imageResolution;       
     float nearDistance;
+    int sampleNumber;
 };
 
 struct PointLight
@@ -61,6 +62,12 @@ struct IntersectionReport
 
 };
 
+
+struct Sample
+{
+    float x;
+    float y;
+};
 
 
 #endif

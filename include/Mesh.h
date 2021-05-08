@@ -10,12 +10,11 @@
 class Mesh : public Object
 {
 private:
-    BVH* bvhRoot;
-    int materialId;
-
-    bool softShadingFlag;
 
 public:
+    int materialId;
+    BVH* bvhRoot;
+    bool softShadingFlag;
     Mesh(const std::vector<Triangle>& triangleList, size_t materialId, bool softShadingFlag);
     bool Intersect(const Ray& ray, IntersectionReport& report, float tmin, float tmax, float intersectionEpsilon);
 };
