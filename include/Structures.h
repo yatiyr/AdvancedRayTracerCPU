@@ -19,6 +19,8 @@ struct Camera
     alignas(16) glm::vec4 nearPlane;
     glm::vec2 imageResolution;       
     float nearDistance;
+    float focusDistance;
+    float apertureSize;
     int sampleNumber;
 };
 

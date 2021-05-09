@@ -45,6 +45,10 @@ Scene::Scene(const std::string& filepath)
     backfaceCulling = true;
     
     randomVariableGenerator = new RandomGenerator(0.0f, 1.0f);
+
+    float halfAperture = _activeCamera.apertureSize/2;
+
+    cameraVariableGenerator = new RandomGenerator(-halfAperture, halfAperture);
     
 }
 
@@ -182,9 +186,27 @@ std::vector<RayWithWeigth> Scene::ComputePrimaryRays(int i, int j)
             float sv = (i + offsetY) * (_activeCamera.nearPlane.w -  _activeCamera.nearPlane.z) / _activeCamera.imageResolution.y;
 
             glm::vec3 direction = glm::normalize((q + su * _activeCamera.v - sv * _activeCamera.up) - origin);
+            Ray fR(origin, direction);
+
+            if(_activeCamera.apertureSize != 0)
+            {
+
+                float tfd = _activeCamera.focusDistance/glm::dot(-direction, -_activeCamera.gaze);
+                glm::vec3 p = fR.origin + tfd * fR.direction;
+
+                float apertureRandomOffset = cameraVariableGenerator->Generate();
+
+                glm::vec3 s = origin;
+                s.y += apertureRandomOffset;
+
+                glm::vec3 bentDir = glm::normalize(p - s);
+
+                fR = Ray(s, bentDir);
+                
+            }
 
             RayWithWeigth rww;
-            rww.r = Ray(origin, direction);
+            rww.r = fR;
             rww.distX = std::fabs(0.5f - offsetX);
             rww.distY = std::fabs(0.5f - offsetY);
 
@@ -370,8 +392,6 @@ glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, in
         IntersectionReport report;
         if(TestWorldIntersection(reflected, report, 0, 2000, _intersectionTestEpsilon, backfaceCulling))
         {
-            if(report.materialId == 2)
-                int x = 0;
             result += attenuation * _materials[iR.materialId].mirrorReflectance * (ComputeAmbientComponent(report) + 
                                                                          ComputeDiffuseSpecular(report, reflected) +
                                                                          RecursiveTrace(reflected, report, bounce + 1, backfaceCulling));

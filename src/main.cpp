@@ -4,7 +4,7 @@
 int main(int argc, char** argv)
 {
 
-    Renderer RnDr("assets/scenes/dragon_dynamic.xml");
+    Renderer RnDr("assets/scenes/spheres_dof.xml");
 
     try
     {    

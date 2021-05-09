@@ -170,6 +170,25 @@ inline void SceneReadCameras(tinyxml2::XMLNode* root, std::vector<Camera>& _came
         }
         camera.sampleNumber = sampleNumber;
 
+
+        child = element->FirstChildElement("FocusDistance");
+        float focusDistance = 0;
+        if(child)
+        {
+            stream << child->GetText() << std::endl;
+            stream >> focusDistance;
+        }
+
+        child = element->FirstChildElement("ApertureSize");
+        float apertureSize = 0;
+        if(child)
+        {
+            stream << child->GetText() << std::endl;
+            stream >> apertureSize;
+        }
+
+        camera.focusDistance = focusDistance;
+        camera.apertureSize = apertureSize;
         _cameras.push_back(camera);
         element = element->NextSiblingElement("Camera");
     }

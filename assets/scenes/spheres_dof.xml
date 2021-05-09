@@ -13,7 +13,7 @@
             <FocusDistance>21</FocusDistance>
             <ApertureSize>1.5</ApertureSize>
             <ImageResolution>800 800</ImageResolution>
-            <NumSamples>100</NumSamples>
+            <NumSamples>1600</NumSamples>
             <ImageName>spheres_dof.png</ImageName>
         </Camera>
     </Cameras>
@@ -22,7 +22,7 @@
         <AmbientLight>25 25 25</AmbientLight>
         <PointLight id="1">
             <Position>0 30 50</Position>
-            <Intensity>2000 2000 2000</Intensity>
+            <Intensity>4000 4000 4000</Intensity>
         </PointLight>
     </Lights>
 

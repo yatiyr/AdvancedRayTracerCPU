@@ -42,7 +42,8 @@ private:
     bool backfaceCulling;
 
     RandomGenerator* randomVariableGenerator;
-
+    RandomGenerator* cameraVariableGenerator;
+    
     int _sampleNumber;
     std::vector<Sample> samples;
 
