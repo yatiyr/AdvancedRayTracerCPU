@@ -18,7 +18,7 @@ private:
 public:
 
     Sphere(glm::vec3 center, float radius, size_t materialId);
-    bool Intersect(const Ray& r, IntersectionReport& report, float tmin, float tmax, float intersectionEpsilon);
+    bool Intersect(const Ray& r, IntersectionReport& report, float tmin, float tmax, float intersectionEpsilon, bool backfaceCulling);
 
 };
 

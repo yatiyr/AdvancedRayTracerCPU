@@ -30,7 +30,7 @@ bool Sphere::solveQuadratic(const float &a, const float &b, const float &c, floa
         
 }
 
-bool Sphere::Intersect(const Ray& r, IntersectionReport& report, float tmin, float tmax, float intersectionEpsilon)
+bool Sphere::Intersect(const Ray& r, IntersectionReport& report, float tmin, float tmax, float intersectionEpsilon, bool backfaceCulling)
 {
 
     glm::vec3 newOrigin = (transformationMatrixInversed*glm::vec4(r.origin, 1.0f));

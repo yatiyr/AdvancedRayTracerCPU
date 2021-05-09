@@ -59,7 +59,7 @@ public:
     BVH(const std::vector<Triangle>& triangleList, int depth, int maxdepth);
     BVH(const std::vector<Triangle>& triangleList, int depth, int maxdepth, int axis);
     
-    bool Intersect(const Ray& ray, IntersectionReport& report, float tmin, float tmax, float intersectionTestEpsilon, bool softShadingFlag, const glm::mat4& transformationMatrixTransposed);
+    bool Intersect(const Ray& ray, IntersectionReport& report, float tmin, float tmax, float intersectionTestEpsilon, bool softShadingFlag, const glm::mat4& transformationMatrixTransposed, bool backfaceCulling);
 };
 
 

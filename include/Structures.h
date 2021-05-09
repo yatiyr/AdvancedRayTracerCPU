@@ -69,5 +69,12 @@ struct Sample
     float y;
 };
 
+struct RayWithWeigth
+{
+    Ray r;
+    float distX;
+    float distY;
+};
+
 
 #endif

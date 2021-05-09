@@ -209,7 +209,7 @@ BVH::BVH(const std::vector<Triangle>& triangleList, int depth, int maxdepth, int
     this->rightChild = new BVH(st.p2, depth + 1, maxdepth, (axis+1)%3);
 }
 
-bool BVH::Intersect(const Ray& ray, IntersectionReport& report, float tmin, float tmax, float intersectionTestEpslion, bool softShadingFlag, const glm::mat4& transformationMatrixTransposed)
+bool BVH::Intersect(const Ray& ray, IntersectionReport& report, float tmin, float tmax, float intersectionTestEpslion, bool softShadingFlag, const glm::mat4& transformationMatrixTransposed, bool backfaceCulling)
 {
     bool boxTest = box.Intersect2(ray, tmin, tmax);
 
@@ -225,7 +225,7 @@ bool BVH::Intersect(const Ray& ray, IntersectionReport& report, float tmin, floa
         for(size_t i=0; i<primitives.size(); i++)
         {
             IntersectionReport r;
-            bool hitTest = primitives[i].Intersect(ray, r, tmin, tmax, intersectionTestEpslion, softShadingFlag, transformationMatrixTransposed);
+            bool hitTest = primitives[i].Intersect(ray, r, tmin, tmax, intersectionTestEpslion, softShadingFlag, transformationMatrixTransposed, backfaceCulling);
             if(hitTest)
             {
                 report = r.d < report.d ? r : report;
@@ -236,8 +236,8 @@ bool BVH::Intersect(const Ray& ray, IntersectionReport& report, float tmin, floa
         return report.d != FLT_MAX;
     }    
 
-    bool leftTest  = leftChild ->Intersect(ray, report1, tmin, tmax, intersectionTestEpslion, softShadingFlag, transformationMatrixTransposed);
-    bool rightTest = rightChild->Intersect(ray, report2, tmin, tmax, intersectionTestEpslion, softShadingFlag, transformationMatrixTransposed);
+    bool leftTest  = leftChild ->Intersect(ray, report1, tmin, tmax, intersectionTestEpslion, softShadingFlag, transformationMatrixTransposed, backfaceCulling);
+    bool rightTest = rightChild->Intersect(ray, report2, tmin, tmax, intersectionTestEpslion, softShadingFlag, transformationMatrixTransposed, backfaceCulling);
 
     if(leftTest)
     {

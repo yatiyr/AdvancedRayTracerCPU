@@ -42,6 +42,8 @@ Scene::Scene(const std::string& filepath)
     coreSize = std::thread::hardware_concurrency();
     count = 0;
 
+    backfaceCulling = true;
+    
     randomVariableGenerator = new RandomGenerator(0.0f, 1.0f);
     
 }
@@ -80,9 +82,13 @@ void Scene::RenderThread()
                         break;
 
                     glm::vec2 coords = GiveCoords(index, _imageWidth);
-                    Ray pR = ComputePrimaryRay(coords.x, coords.y);
-                    glm::vec3 pixel = RayTrace(pR);
-                    WritePixelCoord(coords.x, coords.y, pixel);
+                    
+                    std::vector<RayWithWeigth> rwwVector = ComputePrimaryRays(coords.x, coords.y);
+                    glm::vec3 filteredColor = TraceAndFilter(rwwVector);
+
+                    //Ray pR = ComputePrimaryRay(coords.x, coords.y);
+                    //glm::vec3 pixel = RayTrace(pR);
+                    WritePixelCoord(coords.x, coords.y, filteredColor);
 
 /*
                     {
@@ -147,18 +153,51 @@ Ray Scene::ComputePrimaryRay(int i, int j)
 }
 
 
-std::vector<Ray> Scene::ComputePrimaryRays(int i, int j)
+std::vector<RayWithWeigth> Scene::ComputePrimaryRays(int i, int j)
 {
-    std::vector<Ray> result;
+    std::vector<RayWithWeigth> result;
+    int rowColSize = std::sqrt(_activeCamera.sampleNumber);
 
+    for(int y=0; y<rowColSize; y++)
+    {
+        for(int x=0; x<rowColSize; x++)
+        {
+            float randomX = randomVariableGenerator->Generate();
+            float randomY = randomVariableGenerator->Generate();
 
+            glm::vec3 origin = _activeCamera.position;
+            glm::vec3 m = origin + _activeCamera.gaze * _activeCamera.nearDistance;
+            glm::vec3 q = m + _activeCamera.nearPlane.x * _activeCamera.v + _activeCamera.nearPlane.w * _activeCamera.up;
 
+            float offsetX = (x + randomX)/rowColSize;
+            float offsetY = (y + randomY)/rowColSize;
 
+            if(rowColSize == 1)
+            {
+                offsetX = 0.5f;
+                offsetY = 0.5f;
+            }
 
+            float su = (j + offsetX) * (_activeCamera.nearPlane.y - _activeCamera.nearPlane.x) / _activeCamera.imageResolution.x;
+            float sv = (i + offsetY) * (_activeCamera.nearPlane.w -  _activeCamera.nearPlane.z) / _activeCamera.imageResolution.y;
+
+            glm::vec3 direction = glm::normalize((q + su * _activeCamera.v - sv * _activeCamera.up) - origin);
+
+            RayWithWeigth rww;
+            rww.r = Ray(origin, direction);
+            rww.distX = std::fabs(0.5f - offsetX);
+            rww.distY = std::fabs(0.5f - offsetY);
+
+            result.push_back(rww);
+        }
+    }
+    
     return result;
 }
 
-bool Scene::TestWorldIntersection(const Ray& ray, IntersectionReport& report, float tmin, float tmax, float intersectionTestEpsilon)
+
+
+bool Scene::TestWorldIntersection(const Ray& ray, IntersectionReport& report, float tmin, float tmax, float intersectionTestEpsilon, bool backfaceCulling)
 {
     report.d = FLT_MAX;
     bool result = false;
@@ -166,49 +205,17 @@ bool Scene::TestWorldIntersection(const Ray& ray, IntersectionReport& report, fl
     for(auto object : _objectPointerVector)
     {
         IntersectionReport r;
-        if(object->Intersect(ray, r, tmin, tmax, intersectionTestEpsilon))
+        if(object->Intersect(ray, r, tmin, tmax, intersectionTestEpsilon, backfaceCulling))
         {
             result = true;
             report = r.d < report.d ? r : report;
         }
     }
-
-/*
-    for(size_t i=0; i< _meshes.size(); i++)
-    {
-        IntersectionReport r;
-        if(_meshes[i].Intersect(ray, r, tmin, tmax, intersectionTestEpsilon))
-        {
-            result = true;
-            report = r.d < report.d ? r : report;
-        }
-    }
-
-    for(size_t i=0; i < _triangles.size(); i++)
-    {
-        IntersectionReport r;
-        if(_triangles[i].Intersect(ray, r, tmin, tmax, intersectionTestEpsilon))
-        {
-            result = true;
-            report = r.d < report.d ? r : report;                    
-        }
-    }
-
-    for(size_t i=0; i<_spheres.size(); i++)
-    {
-        IntersectionReport r;
-        if(_spheres[i].Intersect(ray, r, tmin, tmax, intersectionTestEpsilon))
-        {
-            result = true;
-            report = r.d < report.d ? r : report;              
-        }
-    }
-*/
 
     return result;
 }
 
-bool Scene::ShadowRayIntersection(float tmin, float tmax, float intersectionTestEpsilon, float shadowRayEpsilon, const PointLight& light, const IntersectionReport& report)
+bool Scene::ShadowRayIntersection(float tmin, float tmax, float intersectionTestEpsilon, float shadowRayEpsilon, const PointLight& light, const IntersectionReport& report, bool backfaceCulling)
 {
 
     glm::vec3 direction = glm::normalize(light.position - report.intersection);
@@ -222,33 +229,10 @@ bool Scene::ShadowRayIntersection(float tmin, float tmax, float intersectionTest
     for(auto object : _objectPointerVector)
     {
         IntersectionReport r;
-        if(object->Intersect(ray, r, tmin, tmax, intersectionTestEpsilon) && r.d < dist)
+        if(object->Intersect(ray, r, tmin, tmax, intersectionTestEpsilon, backfaceCulling) && r.d < dist)
             return true;
     }
 
-    /*
-    for(size_t i=0; i<_meshes.size(); i++)
-    {
-        IntersectionReport r;
-        if(_meshes[i].Intersect(ray, r, tmin, tmax, intersectionTestEpsilon) && r.d < dist)
-            return true;
-
-    }
-
-    for(size_t i=0; i<_triangles.size(); i++)
-    {
-        IntersectionReport r;
-        if(_triangles[i].Intersect(ray, r, tmin, tmax, intersectionTestEpsilon) && r.d < dist)
-            return true;
-    }
-
-    for(size_t i=0; i<_spheres.size(); i++)
-    {
-        IntersectionReport r;
-        if(_spheres[i].Intersect(ray, r, tmin, tmax, intersectionTestEpsilon) && r.d < dist)
-            return true;
-    }
-*/
     return false;
 }
 
@@ -264,7 +248,7 @@ glm::vec3 Scene::ComputeDiffuseSpecular(const IntersectionReport& report, const 
 
     for(size_t i=0; i<_pointLights.size(); i++)
     {
-        if(ShadowRayIntersection(0, 2000, _intersectionTestEpsilon, _shadowRayEpsilon, _pointLights[i], report))
+        if(ShadowRayIntersection(0, 2000, _intersectionTestEpsilon, _shadowRayEpsilon, _pointLights[i], report, true))
         {
             continue;
         }
@@ -307,14 +291,14 @@ glm::vec3 Scene::ComputeSpecularComponent(const IntersectionReport& report, cons
 }
 
 
-glm::vec3 Scene::RayTrace(const Ray& ray)
+glm::vec3 Scene::RayTrace(const Ray& ray, bool backfaceCulling)
 {
 
     IntersectionReport r;
-    if(TestWorldIntersection(ray, r, 0, 2000, _intersectionTestEpsilon))
+    if(TestWorldIntersection(ray, r, 0, 2000, _intersectionTestEpsilon, backfaceCulling))
     {
         glm::vec3 pixel(0.0);        
-        pixel += ComputeAmbientComponent(r) + ComputeDiffuseSpecular(r, ray) + RecursiveTrace(ray, r, 0);
+        pixel += ComputeAmbientComponent(r) + ComputeDiffuseSpecular(r, ray) + RecursiveTrace(ray, r, 0, false);
         
 
         return glm::clamp(pixel, glm::vec3(0.0f), glm::vec3(1.0f));
@@ -324,8 +308,32 @@ glm::vec3 Scene::RayTrace(const Ray& ray)
 
 }
 
+glm::vec3 Scene::TraceAndFilter(std::vector<RayWithWeigth> rwwVector)
+{
+    float stdDev = 1.f/6.f;
+    glm::vec3 result;
 
-glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, int bounce)
+    glm::vec3 weightedSum(0.f);
+    glm::vec3 totalWeight(0.f);
+
+    for(size_t i=0; i<rwwVector.size(); i++)
+    {
+        glm::vec3 rtResult = RayTrace(rwwVector[i].r, true);
+
+        weightedSum += GaussianWeight(rwwVector[i].distX, rwwVector[i].distY, stdDev) * rtResult;
+        totalWeight += GaussianWeight(rwwVector[i].distX, rwwVector[i].distY, stdDev);
+    }
+
+    result.x = weightedSum.x / totalWeight.x;
+    result.y = weightedSum.y / totalWeight.y;
+    result.z = weightedSum.z / totalWeight.z;
+
+    return result;
+    
+}
+
+
+glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, int bounce, bool backfaceCulling)
 {
 
     glm::vec3 result(0.0);
@@ -360,11 +368,11 @@ glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, in
         reflected.materialIdCurrentlyIn = ray.materialIdCurrentlyIn;
 
         IntersectionReport report;
-        if(TestWorldIntersection(reflected, report, 0, 2000, _intersectionTestEpsilon))
+        if(TestWorldIntersection(reflected, report, 0, 2000, _intersectionTestEpsilon, backfaceCulling))
         {
             result += attenuation * _materials[iR.materialId].mirrorReflectance * (ComputeAmbientComponent(report) + 
                                                                          ComputeDiffuseSpecular(report, reflected) +
-                                                                         RecursiveTrace(reflected, report, bounce + 1));
+                                                                         RecursiveTrace(reflected, report, bounce + 1, backfaceCulling));
         }
     }
 
@@ -414,14 +422,14 @@ glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, in
                 float transmissionRatio = 1 - reflectionRatio;
 
                 IntersectionReport report;
-                if(TestWorldIntersection(reflected, report, 0, 2000, _intersectionTestEpsilon))
+                if(TestWorldIntersection(reflected, report, 0, 2000, _intersectionTestEpsilon, backfaceCulling))
                 {
-                    result += reflectionRatio * (ComputeAmbientComponent(report) + ComputeDiffuseSpecular(report, reflected) + RecursiveTrace(reflected, report, bounce + 1));
+                    result += reflectionRatio * (ComputeAmbientComponent(report) + ComputeDiffuseSpecular(report, reflected) + RecursiveTrace(reflected, report, bounce + 1, backfaceCulling));
                 }
                 IntersectionReport report2;
-                if(TestWorldIntersection(tRay, report2, 0, 2000, _intersectionTestEpsilon))
+                if(TestWorldIntersection(tRay, report2, 0, 2000, _intersectionTestEpsilon, backfaceCulling))
                 {
-                    result += transmissionRatio * (RecursiveTrace(tRay, report2, bounce + 1));
+                    result += transmissionRatio * (RecursiveTrace(tRay, report2, bounce + 1, backfaceCulling));
                 }
 
             }
@@ -435,10 +443,10 @@ glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, in
                 reflected.materialIdCurrentlyIn = ray.materialIdCurrentlyIn;
 
                 IntersectionReport report;
-                if(TestWorldIntersection(reflected, report, 0, 2000, _intersectionTestEpsilon))
+                if(TestWorldIntersection(reflected, report, 0, 2000, _intersectionTestEpsilon, backfaceCulling))
                 {
                     result += (ComputeDiffuseSpecular(report, reflected) +
-                                                               RecursiveTrace(reflected, report, bounce + 1));
+                                                               RecursiveTrace(reflected, report, bounce + 1, backfaceCulling));
                 }                
             }            
         }
@@ -489,14 +497,14 @@ glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, in
 
 
                 IntersectionReport report;
-                if(TestWorldIntersection(reflected, report, 0, 2000, _intersectionTestEpsilon))
+                if(TestWorldIntersection(reflected, report, 0, 2000, _intersectionTestEpsilon, backfaceCulling))
                 {
-                    result += reflectionRatio * attenuation * (RecursiveTrace(reflected, report, bounce + 1));
+                    result += reflectionRatio * attenuation * (RecursiveTrace(reflected, report, bounce + 1, backfaceCulling));
                 }
                 IntersectionReport report2;
-                if(TestWorldIntersection(tRay, report2, 0, 2000, _intersectionTestEpsilon))
+                if(TestWorldIntersection(tRay, report2, 0, 2000, _intersectionTestEpsilon, backfaceCulling))
                 {
-                    result += transmissionRatio * attenuation * (ComputeAmbientComponent(report2) + ComputeDiffuseSpecular(report2, tRay) + RecursiveTrace(tRay, report2, bounce + 1));
+                    result += transmissionRatio * attenuation * (ComputeAmbientComponent(report2) + ComputeDiffuseSpecular(report2, tRay) + RecursiveTrace(tRay, report2, bounce + 1, backfaceCulling));
                 }
 
             }
@@ -510,9 +518,9 @@ glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, in
                 reflected.materialIdCurrentlyIn = ray.materialIdCurrentlyIn;
 
                 IntersectionReport report;
-                if(TestWorldIntersection(reflected, report, 0, 2000, _intersectionTestEpsilon))
+                if(TestWorldIntersection(reflected, report, 0, 2000, _intersectionTestEpsilon, backfaceCulling))
                 {
-                    result += attenuation * (RecursiveTrace(reflected, report, bounce + 1));
+                    result += attenuation * (RecursiveTrace(reflected, report, bounce + 1, backfaceCulling));
                 }                
             } 
         } 
@@ -543,11 +551,11 @@ glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, in
         reflected.materialIdCurrentlyIn = ray.materialIdCurrentlyIn;
 
         IntersectionReport report;
-        if(TestWorldIntersection(reflected, report, 0, 2000, _intersectionTestEpsilon))
+        if(TestWorldIntersection(reflected, report, 0, 2000, _intersectionTestEpsilon, backfaceCulling))
         {
             result += attenuation * reflectionRatio * _materials[iR.materialId].mirrorReflectance * (
                                                                          ComputeDiffuseSpecular(report, reflected) +
-                                                                         RecursiveTrace(reflected, report, bounce + 1));
+                                                                         RecursiveTrace(reflected, report, bounce + 1, backfaceCulling));
         }        
     }
 

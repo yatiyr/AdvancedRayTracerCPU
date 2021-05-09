@@ -4,7 +4,7 @@
 int main(int argc, char** argv)
 {
 
-    Renderer RnDr("assets/scenes/cornellbox_boxes_dynamic.xml");
+    Renderer RnDr("assets/scenes/cornellbox_brushed_metal.xml");
 
     try
     {    

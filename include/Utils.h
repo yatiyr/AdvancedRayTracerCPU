@@ -10,6 +10,7 @@
 #include <happly.h>
 #include <map>
 
+const double EULER =  2.71828182845904523536;
 
 inline std::vector<std::string> split(std::string text)
 {
@@ -398,20 +399,52 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
             {
                 glm::vec3 a,b,c;
 
-                a.x = vPos[fInd[i][0]][0];
-                a.y = vPos[fInd[i][0]][1];
-                a.z = vPos[fInd[i][0]][2];
+                if(fInd[i].size() == 3)
+                {
+                    a.x = vPos[fInd[i][0]][0];
+                    a.y = vPos[fInd[i][0]][1];
+                    a.z = vPos[fInd[i][0]][2];
 
-                b.x = vPos[fInd[i][1]][0];
-                b.y = vPos[fInd[i][1]][1];
-                b.z = vPos[fInd[i][1]][2];                                
+                    b.x = vPos[fInd[i][1]][0];
+                    b.y = vPos[fInd[i][1]][1];
+                    b.z = vPos[fInd[i][1]][2];                                
 
-                c.x = vPos[fInd[i][2]][0];
-                c.y = vPos[fInd[i][2]][1];
-                c.z = vPos[fInd[i][2]][2];
+                    c.x = vPos[fInd[i][2]][0];
+                    c.y = vPos[fInd[i][2]][1];
+                    c.z = vPos[fInd[i][2]][2];
 
-                Triangle tri(a, b, c, normals[fInd[i][0]], normals[fInd[i][1]], normals[fInd[i][2]]);
-                triangleList.push_back(tri);
+                    Triangle tri(a, b, c, normals[fInd[i][0]], normals[fInd[i][1]], normals[fInd[i][2]]);
+                    triangleList.push_back(tri);
+                }
+                else if(fInd[i].size() == 4)
+                {
+                    a.x = vPos[fInd[i][0]][0];
+                    a.y = vPos[fInd[i][0]][1];
+                    a.z = vPos[fInd[i][0]][2];
+
+                    b.x = vPos[fInd[i][1]][0];
+                    b.y = vPos[fInd[i][1]][1];
+                    b.z = vPos[fInd[i][1]][2];                                
+
+                    c.x = vPos[fInd[i][2]][0];
+                    c.y = vPos[fInd[i][2]][1];
+                    c.z = vPos[fInd[i][2]][2];
+
+                    Triangle tri(a, b, c, normals[fInd[i][0]], normals[fInd[i][1]], normals[fInd[i][2]]);
+                    triangleList.push_back(tri);
+
+                    b.x = vPos[fInd[i][2]][0];
+                    b.y = vPos[fInd[i][2]][1];
+                    b.z = vPos[fInd[i][2]][2];                                
+
+                    c.x = vPos[fInd[i][3]][0];
+                    c.y = vPos[fInd[i][3]][1];
+                    c.z = vPos[fInd[i][3]][2];
+
+                    Triangle tri2(a, b, c, normals[fInd[i][0]], normals[fInd[i][2]], normals[fInd[i][3]]);
+                    triangleList.push_back(tri2);
+
+                }
                 
             }
 
@@ -834,6 +867,11 @@ inline void ScenePopulateObjects(std::vector<Object*>& _objects, std::vector<Mes
         _objects.push_back(&_triangles[i]);
     }            
 
+}
+
+inline float GaussianWeight(float x, float y, float stdDev)
+{
+    return (1/(2*M_PI*stdDev*stdDev)) * std::pow(EULER, (-1/2)*((x*x + y*y)/(stdDev*stdDev)));
 }
 
 #endif /* __UTILS_H__ */

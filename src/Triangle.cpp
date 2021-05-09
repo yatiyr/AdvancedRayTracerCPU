@@ -23,7 +23,7 @@ Triangle::Triangle(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 aNormal, glm
     this->normal = glm::normalize(glm::cross((b-a), (c-a)));	
 }
 
-bool Triangle::Intersect(const Ray& ray, IntersectionReport& report, float tmin, float tmax, float intersectionTestEpsilon)
+bool Triangle::Intersect(const Ray& ray, IntersectionReport& report, float tmin, float tmax, float intersectionTestEpsilon, bool backfaceCulling)
 {
 
     glm::vec3 newOrigin = (transformationMatrixInversed*glm::vec4(ray.origin, 1.0f));
@@ -57,6 +57,12 @@ bool Triangle::Intersect(const Ray& ray, IntersectionReport& report, float tmin,
 		report.intersection = ray.origin + t*ray.direction;
         report.normal       = glm::normalize(this->transformationMatrixInverseTransposed * glm::vec4(this->normal, 0.0f));
 
+		if(backfaceCulling)
+		{
+			if(glm::dot(ray.direction, normal) > 0)
+				return false;
+		}
+
 		report.materialId   = materialId;
         return true;
 	}
@@ -64,7 +70,7 @@ bool Triangle::Intersect(const Ray& ray, IntersectionReport& report, float tmin,
 	return false;   	
 }
 
-bool Triangle::Intersect(const Ray& ray, IntersectionReport& report, float tmin, float tmax, float intersectionTestEpsilon, bool softShadingFlag, const glm::mat4& transformationMatrixInverseTransposed)
+bool Triangle::Intersect(const Ray& ray, IntersectionReport& report, float tmin, float tmax, float intersectionTestEpsilon, bool softShadingFlag, const glm::mat4& transformationMatrixInverseTransposed, bool backfaceCulling)
 {
 
     report.d = FLT_MAX;
@@ -98,10 +104,24 @@ bool Triangle::Intersect(const Ray& ray, IntersectionReport& report, float tmin,
 			float alpha = 1 - (beta + gamma);
 			glm::vec3 normal = glm::normalize(alpha*aNormal + beta*bNormal + gamma*cNormal);
 			report.normal = glm::normalize(transformationMatrixInverseTransposed * glm::vec4(this->normal, 0.0f));
+
+			if(backfaceCulling)
+			{
+				if(glm::dot(ray.direction, normal) > 0)
+					return false;
+			}
+
 		}
 		else
 		{
         	report.normal       = glm::normalize(transformationMatrixInverseTransposed * glm::vec4(this->normal, 0.0f));
+
+			if(backfaceCulling)
+			{
+				if(glm::dot(ray.direction, normal) > 0)
+					return false;
+			}
+
 		}
 		report.materialId   = materialId;
         return true;

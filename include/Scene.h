@@ -29,9 +29,6 @@
 #include <RandomGenerator.h>
 #include <random>
 
-
-const double EULER =  2.71828182845904523536;
-
 struct WorkGroup
 {
     int start;
@@ -41,6 +38,8 @@ struct WorkGroup
 class Scene
 {
 private:
+
+    bool backfaceCulling;
 
     RandomGenerator* randomVariableGenerator;
 
@@ -93,7 +92,7 @@ private:
     float* _image;
 
     Ray ComputePrimaryRay(int i, int j);
-    std::vector<Ray> ComputePrimaryRays(int i, int j);
+    std::vector<RayWithWeigth> ComputePrimaryRays(int i, int j);
     void ClearImage();
 
 
@@ -102,7 +101,8 @@ private:
                                IntersectionReport& report,
                                float tmin,
                                float tmax,
-                               float intersectionTestEpsilon);
+                               float intersectionTestEpsilon,
+                               bool backfaceCulling);
 
     bool ShadowRayIntersection(
                                float tmin,
@@ -110,15 +110,18 @@ private:
                                float intersectionTestEpsilon,
                                float shadowRayEpsilon,
                                const PointLight& light,
-                               const IntersectionReport& report);
+                               const IntersectionReport& report,
+                               bool backfaceCulling);
 
 
     glm::vec3 ComputeAmbientComponent(const IntersectionReport& report);
     glm::vec3 ComputeDiffuseSpecular(const IntersectionReport& report, const Ray& ray);
     glm::vec3 ComputeSpecularComponent(const IntersectionReport& report, const PointLight& light, const Ray& ray);
 
-    glm::vec3 RayTrace(const Ray& ray);
-    glm::vec3 RecursiveTrace(const Ray& ray, const IntersectionReport& iR, int bounce);
+    glm::vec3 RayTrace(const Ray& ray, bool backfaceCulling);
+    glm::vec3 RecursiveTrace(const Ray& ray, const IntersectionReport& iR, int bounce, bool backfaceCulling);
+
+    glm::vec3 TraceAndFilter(std::vector<RayWithWeigth> rwwVector);
 
     void RenderThread();
 
