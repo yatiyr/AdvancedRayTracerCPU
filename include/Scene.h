@@ -43,6 +43,7 @@ private:
 
     RandomGenerator* randomVariableGenerator;
     RandomGenerator* cameraVariableGenerator;
+    RandomGenerator* areaLightPositionGenerator;
     
     int _sampleNumber;
     std::vector<Sample> samples;
@@ -79,6 +80,7 @@ private:
     std::vector<Object*> _objectPointerVector;
 
     std::vector<PointLight> _pointLights;
+    std::vector<AreaLight> _areaLights;
 
     std::vector<Material>   _materials;
     std::vector<Camera>     _cameras;
@@ -110,7 +112,7 @@ private:
                                float tmax,
                                float intersectionTestEpsilon,
                                float shadowRayEpsilon,
-                               const PointLight& light,
+                               const glm::vec3& lightPosition,
                                const IntersectionReport& report,
                                bool backfaceCulling);
 

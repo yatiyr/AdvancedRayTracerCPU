@@ -21,7 +21,7 @@ Scene::Scene(const std::string& filepath)
 
     SceneReadConstants(root, _backgroundColor, _shadowRayEpsilon, _intersectionTestEpsilon, _maxRecursionDepth);
     SceneReadCameras(root, _cameras, imageNames, _imageName);
-    SceneReadLights(root, _pointLights, _ambientLight);
+    SceneReadLights(root, _pointLights, _areaLights, _ambientLight);
     SceneReadMaterials(root, _materials);
     SceneReadVertexData(root, _vertexData);
     SceneReadTransformations(root, _translationMatrices, _rotationMatrices, _scalingMatrices);
@@ -49,6 +49,8 @@ Scene::Scene(const std::string& filepath)
     float halfAperture = _activeCamera.apertureSize/2;
 
     cameraVariableGenerator = new RandomGenerator(-halfAperture, halfAperture);
+
+    areaLightPositionGenerator = new RandomGenerator(-0.5f, 0.5f);
     
 }
 
@@ -237,15 +239,15 @@ bool Scene::TestWorldIntersection(const Ray& ray, IntersectionReport& report, fl
     return result;
 }
 
-bool Scene::ShadowRayIntersection(float tmin, float tmax, float intersectionTestEpsilon, float shadowRayEpsilon, const PointLight& light, const IntersectionReport& report, bool backfaceCulling)
+bool Scene::ShadowRayIntersection(float tmin, float tmax, float intersectionTestEpsilon, float shadowRayEpsilon, const glm::vec3& lightPosition, const IntersectionReport& report, bool backfaceCulling)
 {
 
-    glm::vec3 direction = glm::normalize(light.position - report.intersection);
+    glm::vec3 direction = glm::normalize(lightPosition - report.intersection);
     glm::vec3 origin    = report.intersection + shadowRayEpsilon*report.normal;
     
     Ray ray(origin, direction);
 
-    float dist = glm::length(light.position - report.intersection);
+    float dist = glm::length(lightPosition - report.intersection);
 
 
     for(auto object : _objectPointerVector)
@@ -270,7 +272,7 @@ glm::vec3 Scene::ComputeDiffuseSpecular(const IntersectionReport& report, const 
 
     for(size_t i=0; i<_pointLights.size(); i++)
     {
-        if(ShadowRayIntersection(0, 2000, _intersectionTestEpsilon, _shadowRayEpsilon, _pointLights[i], report, true))
+        if(ShadowRayIntersection(0, 2000, _intersectionTestEpsilon, _shadowRayEpsilon, _pointLights[i].position, report, true))
         {
             continue;
         }
@@ -291,6 +293,39 @@ glm::vec3 Scene::ComputeDiffuseSpecular(const IntersectionReport& report, const 
             result += _materials[report.materialId].specularReflectance *
                     std::pow(std::max(0.0f, glm::dot(report.normal, h)), _materials[report.materialId].phongExponent) *
                     (_pointLights[i].intensity / (lightDistance * lightDistance));
+        }
+    }
+
+    for(size_t i=0; i<_areaLights.size(); i++)
+    {
+
+        float randomOffsetU = areaLightPositionGenerator->Generate();
+        float randomOffsetV = areaLightPositionGenerator->Generate();
+
+        glm::vec3 randomPoint = _areaLights[i].position + _areaLights[i].extent*(randomOffsetU*_areaLights[i].u + randomOffsetV*_areaLights[i].v);
+
+        if(ShadowRayIntersection(0, 2000, _intersectionTestEpsilon, _shadowRayEpsilon, randomPoint, report, true))
+        {
+            continue;
+        }
+        else
+        {
+            float lightDistance = glm::length(randomPoint - report.intersection);
+            glm::vec3 wi = glm::normalize(randomPoint - report.intersection);
+            glm::vec3 l = -wi;
+
+            // Diffuse Calculation
+            result += _materials[report.materialId].diffuseReflectance *
+                    std::max(0.0f, glm::dot(wi, report.normal)) *
+                    ((_areaLights[i].radiance * std::fabs(glm::dot(l, _areaLights[i].normal)) * _areaLights[i].extent * _areaLights[i].extent)/(lightDistance*lightDistance));
+            
+            // Specular Calculation
+            glm::vec3 h = glm::normalize(wi - ray.direction);
+
+            result += _materials[report.materialId].specularReflectance *
+                   std::pow(std::max(0.0f, glm::dot(report.normal, h)), _materials[report.materialId].phongExponent) *
+                   ((_areaLights[i].radiance * std::fabs(glm::dot(l, _areaLights[i].normal)) * _areaLights[i].extent * _areaLights[i].extent)/(lightDistance*lightDistance));
+
         }
     }
 
@@ -323,7 +358,7 @@ glm::vec3 Scene::RayTrace(const Ray& ray, bool backfaceCulling)
         pixel += ComputeAmbientComponent(r) + ComputeDiffuseSpecular(r, ray) + RecursiveTrace(ray, r, 0, false);
         
 
-        return glm::clamp(pixel, glm::vec3(0.0f), glm::vec3(1.0f));
+        return pixel;
     }
 
     return glm::clamp(_backgroundColor, glm::vec3(0.0f), glm::vec3(1.0f));
@@ -350,7 +385,7 @@ glm::vec3 Scene::TraceAndFilter(std::vector<RayWithWeigth> rwwVector)
     result.y = weightedSum.y / totalWeight.y;
     result.z = weightedSum.z / totalWeight.z;
 
-    return result;
+    return glm::clamp(result, glm::vec3(0.f), glm::vec3(1.0f));
     
 }
 

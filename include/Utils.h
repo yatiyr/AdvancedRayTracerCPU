@@ -196,7 +196,7 @@ inline void SceneReadCameras(tinyxml2::XMLNode* root, std::vector<Camera>& _came
 }
 
 
-inline void SceneReadLights(tinyxml2::XMLNode* root, std::vector<PointLight>& _pointLights, glm::vec3& _ambientLight)
+inline void SceneReadLights(tinyxml2::XMLNode* root, std::vector<PointLight>& _pointLights, std::vector<AreaLight>& _areaLights, glm::vec3& _ambientLight)
 {
     std::stringstream stream;
     // Get Lights
@@ -222,7 +222,39 @@ inline void SceneReadLights(tinyxml2::XMLNode* root, std::vector<PointLight>& _p
         _pointLights.push_back(pointLight);
         element = element->NextSiblingElement("PointLight");
     }
-    stream.clear();    
+    stream.clear();
+
+    element = root->FirstChildElement("Lights");
+    element = element->FirstChildElement("AreaLight");
+    while(element)
+    {
+        glm::vec3 position;
+        glm::vec3 normal;
+        glm::vec3 radiance;
+        float extent;
+
+        child = element->FirstChildElement("Position");
+        stream << child->GetText() << std::endl;
+        child = element->FirstChildElement("Normal");
+        stream << child->GetText() << std::endl;
+        child = element->FirstChildElement("Radiance");
+        stream << child->GetText() << std::endl;
+        child = element->FirstChildElement("Size");
+        stream << child->GetText() << std::endl;
+
+        stream >> position.x >> position.y >> position.z;
+        stream >> normal.x >> normal.y >> normal.z;
+        stream >> radiance.x >> radiance.y >> radiance.z;
+        stream >> extent;
+
+        AreaLight areaLight(position, radiance, normal, extent);
+
+        std::cout << areaLight.extent << std::endl;
+
+        _areaLights.push_back(areaLight);
+        element = element->NextSiblingElement("AreaLight");
+    }
+    stream.clear();
 }
 
 inline void SceneReadMaterials(tinyxml2::XMLNode* root, std::vector<Material>& _materials)

@@ -30,6 +30,47 @@ struct PointLight
     alignas(16) glm::vec3 intensity;
 };
 
+struct AreaLight
+{
+    alignas(16) glm::vec3 position;
+    alignas(16) glm::vec3 radiance;
+    alignas(16) glm::vec3 normal;
+    alignas(16) glm::vec3 u;
+    alignas(16) glm::vec3 v;
+    float extent;
+
+    AreaLight(glm::vec3 position, glm::vec3 radiance, glm::vec3 normal, float extent)
+    {
+        this->normal = normal;
+        this->position = position;
+        this->radiance = radiance;
+        this->extent = extent;
+
+        glm::vec3 nBar = normal;
+
+        float absX = std::fabs(nBar.x);
+        float absY = std::fabs(nBar.y);
+        float absZ = std::fabs(nBar.z);
+
+        if(absX <= absY && absX <= absZ)
+        {
+            nBar.x = 1.0f;
+        }
+        else if(absY <= absX && absY <= absZ)
+        {
+            nBar.y = 1.0f;
+        }
+        else if(absZ <= absX && absZ <= absY)
+        {
+            nBar.z = 1.0f;
+        }     
+
+        this->u = glm::normalize(glm::cross(nBar, normal));
+        this->v = glm::normalize(glm::cross(normal, u));
+
+    }
+};
+
 struct Material
 {
     alignas(16) glm::vec3 ambientReflectance;

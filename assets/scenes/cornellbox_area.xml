@@ -11,7 +11,7 @@
             <NearPlane>-10 10 -10 10</NearPlane>
             <NearDistance>10</NearDistance>
             <ImageResolution>800 800</ImageResolution>
-            <NumSamples>100</NumSamples>
+            <NumSamples>900</NumSamples>
             <ImageName>cornellbox_area.png</ImageName>
         </Camera>
     </Cameras>
@@ -22,7 +22,7 @@
             <Position>0 9.8 2</Position>
             <Normal>0 -1 0</Normal>
             <Size>3</Size> <!-- extent -->
-            <Radiance>150000 150000 150000</Radiance>
+            <Radiance>800 800 800</Radiance>
         </AreaLight>
     </Lights>
 
