@@ -370,6 +370,8 @@ glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, in
         IntersectionReport report;
         if(TestWorldIntersection(reflected, report, 0, 2000, _intersectionTestEpsilon, backfaceCulling))
         {
+            if(report.materialId == 2)
+                int x = 0;
             result += attenuation * _materials[iR.materialId].mirrorReflectance * (ComputeAmbientComponent(report) + 
                                                                          ComputeDiffuseSpecular(report, reflected) +
                                                                          RecursiveTrace(reflected, report, bounce + 1, backfaceCulling));

@@ -20,11 +20,11 @@
         <AmbientLight>25 25 25</AmbientLight>
         <PointLight id="1">
             <Position>400 100 200</Position>
-            <Intensity>700000 700000 700000</Intensity>
+            <Intensity>100000 100000 100000</Intensity>
         </PointLight>
         <PointLight id="2">
             <Position>600 -200 200</Position>
-            <Intensity>700000 700000 700000</Intensity>
+            <Intensity>100000 100000 100000</Intensity>
         </PointLight>
     </Lights>
 
@@ -72,6 +72,10 @@
             <Faces plyFile="ply/dragon_remeshed.ply" />
             <MotionBlur>10 10 10</MotionBlur>
         </Mesh>
+        <MeshInstance id="1" baseMeshId="1" resetTransform="true">
+            <Material>3</Material>
+            <Transformations>r1 t3</Transformations>
+        </MeshInstance>
         <Mesh id="2">
             <Material>1</Material>
             <Transformations>t1</Transformations>

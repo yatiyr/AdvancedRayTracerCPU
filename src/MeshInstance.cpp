@@ -15,7 +15,7 @@ bool MeshInstance::Intersect(const Ray& ray, IntersectionReport& report, float t
 
     bool test = mesh->bvhRoot->Intersect(newRay, report, tmin, tmax, intersectionEpsilon, mesh->softShadingFlag, transformationMatrixInverseTransposed, backfaceCulling);
 
-    report.materialId = mesh->materialId;
+    report.materialId = materialId;
     if(test)
     {
         report.intersection = ray.origin + ray.direction * report.d;

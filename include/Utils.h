@@ -564,6 +564,7 @@ inline void SceneReadMeshInstances(tinyxml2::XMLNode* root, std::vector<Mesh>& _
         int meshId;
         std::string resetTransform;
         MeshInstance meshInstance;
+        meshInstance.materialId = materialId - 1;
 
         child = element->FirstChildElement("Transformations");
         glm::mat4 model(1.0f);        

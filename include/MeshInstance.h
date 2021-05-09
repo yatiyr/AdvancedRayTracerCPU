@@ -8,6 +8,7 @@ class MeshInstance : public Object
 {
 private:
 public:
+    size_t materialId;
     Mesh* mesh;
     MeshInstance();
     bool Intersect(const Ray& ray, IntersectionReport& report, float tmin, float tmax, float intersectionEpsilon, bool backfaceCulling);    

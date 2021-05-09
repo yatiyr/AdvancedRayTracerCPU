@@ -103,7 +103,8 @@ bool Triangle::Intersect(const Ray& ray, IntersectionReport& report, float tmin,
 		{
 			float alpha = 1 - (beta + gamma);
 			glm::vec3 normal = glm::normalize(alpha*aNormal + beta*bNormal + gamma*cNormal);
-			report.normal = glm::normalize(transformationMatrixInverseTransposed * glm::vec4(this->normal, 0.0f));
+			report.normal = transformationMatrixInverseTransposed * glm::vec4(this->normal, 0.0f);
+			report.normal = glm::normalize(report.normal);
 
 			if(backfaceCulling)
 			{
@@ -114,7 +115,8 @@ bool Triangle::Intersect(const Ray& ray, IntersectionReport& report, float tmin,
 		}
 		else
 		{
-        	report.normal       = glm::normalize(transformationMatrixInverseTransposed * glm::vec4(this->normal, 0.0f));
+        	report.normal       = transformationMatrixInverseTransposed * glm::vec4(this->normal, 0.0f);
+			report.normal       = glm::normalize(report.normal);
 
 			if(backfaceCulling)
 			{
