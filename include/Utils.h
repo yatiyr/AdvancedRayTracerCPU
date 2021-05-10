@@ -150,9 +150,10 @@ inline void SceneReadCameras(tinyxml2::XMLNode* root, std::vector<Camera>& _came
             stream >> camera.imageResolution.x >> camera.imageResolution.y;
 
             // normalize gaze and up and compute v
-            camera.gaze = glm::normalize(camera.gaze);
+            camera.v    = glm::cross(camera.gaze, camera.up);
+            camera.v    = glm::normalize(camera.v);
+            camera.gaze = glm::normalize(camera.gaze);     
             camera.up   = glm::normalize(camera.up);
-            camera.v    = glm::normalize(glm::cross(camera.gaze, camera.up));
 
         }
         
