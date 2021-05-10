@@ -4,7 +4,7 @@
 int main(int argc, char** argv)
 {
 
-    Renderer RnDr("assets/scenes/metal_glass_plates.xml");
+    Renderer RnDr(argv[1]);
 
     try
     {    

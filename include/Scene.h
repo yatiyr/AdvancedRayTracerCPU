@@ -45,6 +45,7 @@ private:
     RandomGenerator* cameraVariableGenerator;
     RandomGenerator* areaLightPositionGenerator;
     RandomGenerator* motionBlurTimeGenerator;
+    RandomGenerator* glossyReflectionVarGenerator;
     
     int _sampleNumber;
     std::vector<Sample> samples;

@@ -121,8 +121,10 @@ inline void SceneReadCameras(tinyxml2::XMLNode* root, std::vector<Camera>& _came
 
             glm::vec3 gaze = glm::normalize(gazePoint - camera.position);
             camera.gaze = gaze;
-            camera.up   = glm::normalize(camera.up);
-            camera.v    = glm::normalize(glm::cross(camera.gaze, camera.up));
+
+            glm::vec3 w = -glm::normalize(camera.gaze);
+            camera.v = glm::normalize(glm::cross(camera.up, w));    
+            camera.up   = glm::normalize(glm::cross(w, camera.v));
             camera.nearPlane = glm::vec4(l,r,b,t);            
         }
         else
@@ -150,10 +152,11 @@ inline void SceneReadCameras(tinyxml2::XMLNode* root, std::vector<Camera>& _came
             stream >> camera.imageResolution.x >> camera.imageResolution.y;
 
             // normalize gaze and up and compute v
-            camera.v    = glm::cross(camera.gaze, camera.up);
-            camera.v    = glm::normalize(camera.v);
-            camera.gaze = glm::normalize(camera.gaze);     
-            camera.up   = glm::normalize(camera.up);
+
+            glm::vec3 w = -glm::normalize(camera.gaze);
+            camera.v = glm::normalize(glm::cross(camera.up, w));    
+            camera.up   = glm::normalize(glm::cross(w, camera.v));
+            camera.gaze = glm::normalize(camera.gaze);
 
         }
         
@@ -322,6 +325,16 @@ inline void SceneReadMaterials(tinyxml2::XMLNode* root, std::vector<Material>& _
             stream << "1" << std::endl;
         }
 
+        child = element->FirstChildElement("Roughness");
+        if(child)
+        {
+            stream << child->GetText() << std::endl;
+        }
+        else
+        {
+            stream << "0" << std::endl;
+        }
+
         stream >> material.ambientReflectance.x >> material.ambientReflectance.y >> material.ambientReflectance.z;
         stream >> material.diffuseReflectance.x >> material.diffuseReflectance.y >> material.diffuseReflectance.z;
         stream >> material.specularReflectance.x >> material.specularReflectance.y >> material.specularReflectance.z;
@@ -330,6 +343,7 @@ inline void SceneReadMaterials(tinyxml2::XMLNode* root, std::vector<Material>& _
         stream >> material.refractionIndex;
         stream >> material.absorptionIndex;
         stream >> material.phongExponent;
+        stream >> material.roughness;
 
         material.type = -1;
 
@@ -553,7 +567,8 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
                 triangleList.push_back(tri);
             }
         }
-
+        stream.clear();
+        
         Mesh m(triangleList, materialId - 1, false);
 
         child = element->FirstChildElement("MotionBlur");
@@ -564,7 +579,8 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
             stream >> motionBlurTranslationVector.x >> motionBlurTranslationVector.y >> motionBlurTranslationVector.z;
         }
 
-        m.translationVector = motionBlurTranslationVector;        
+        m.translationVector = motionBlurTranslationVector;
+
 
         child = element->FirstChildElement("Transformations");
         glm::mat4 model(1.0f);        
@@ -963,6 +979,33 @@ inline void ScenePopulateObjects(std::vector<Object*>& _objects, std::vector<Mes
 inline float GaussianWeight(float x, float y, float stdDev)
 {
     return (1/(2*M_PI*stdDev*stdDev)) * std::pow(EULER, (-1/2)*((x*x + y*y)/(stdDev*stdDev)));
+}
+
+inline OrthonormalBasis GiveOrthonormalBasis(glm::vec3 vector)
+{
+
+    OrthonormalBasis result;
+    glm::vec3 nVec = vector;
+
+
+    if(std::fabs(nVec.x) <= std::fabs(nVec.y) && std::fabs(nVec.x) <= std::fabs(nVec.z))
+    {
+        nVec.x = 1.0f;
+    }
+    else if(std::fabs(nVec.y) <= std::fabs(nVec.x) && std::fabs(nVec.y) <= std::fabs(nVec.z))
+    {
+        nVec.y = 1.0f;
+    }
+    else if(std::fabs(nVec.z) <= std::fabs(nVec.x) && std::fabs(nVec.z) <= std::fabs(nVec.y))
+    {
+        nVec.z = 1.0f;
+    }
+
+    result.u = glm::normalize(glm::cross(vector, nVec));
+    result.v = glm::normalize(glm::cross(vector, result.u));
+
+    return result;
+
 }
 
 #endif /* __UTILS_H__ */

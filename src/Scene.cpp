@@ -54,6 +54,8 @@ Scene::Scene(const std::string& filepath)
 
     motionBlurTimeGenerator = new RandomGenerator(0.0f, 1.0f);
 
+    glossyReflectionVarGenerator = new RandomGenerator(-0.5f, 0.5f);
+
     
 }
 
@@ -425,6 +427,15 @@ glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, in
         glm::vec3 reflectedRayOrigin = iR.intersection + iR.normal*_shadowRayEpsilon;
         glm::vec3 reflectedRayDir    = glm::normalize(glm::reflect(ray.direction, iR.normal));
 
+        if(_materials[iR.materialId].roughness > 0)
+        {
+            OrthonormalBasis basis = GiveOrthonormalBasis(reflectedRayDir);
+            float randomOffsetU = glossyReflectionVarGenerator->Generate();
+            float randomOffsetV = glossyReflectionVarGenerator->Generate();
+
+            reflectedRayDir = reflectedRayDir + _materials[iR.materialId].roughness*(randomOffsetU*basis.u + randomOffsetV*basis.v);
+        }
+
         Ray reflected(reflectedRayOrigin, reflectedRayDir);
         reflected.time = ray.time;
         reflected.isRefracting = ray.isRefracting;
@@ -614,6 +625,12 @@ glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, in
                    ((rI*rI + aI*aI)*(cosTheta*cosTheta) + 2*rI*cosTheta + 1);
 
         float reflectionRatio = (rS + rP)/2;
+
+        OrthonormalBasis basis = GiveOrthonormalBasis(reflectedRayDir);
+        float randomOffsetU = glossyReflectionVarGenerator->Generate();
+        float randomOffsetV = glossyReflectionVarGenerator->Generate();
+
+        reflectedRayDir = reflectedRayDir + _materials[iR.materialId].roughness*(randomOffsetU*basis.u + randomOffsetV*basis.v);
         
         Ray reflected(reflectedRayOrigin, reflectedRayDir);
         reflected.isRefracting = ray.isRefracting;

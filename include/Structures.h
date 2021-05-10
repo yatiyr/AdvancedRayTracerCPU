@@ -82,6 +82,7 @@ struct Material
     int type;
     float refractionIndex;
     float absorptionIndex;
+    float roughness;
 };
 
 struct Vertex
@@ -119,5 +120,10 @@ struct RayWithWeigth
     float distY;
 };
 
+struct OrthonormalBasis
+{
+    alignas(16) glm::vec3 u;
+    alignas(16) glm::vec3 v;
+};
 
 #endif
