@@ -249,8 +249,6 @@ inline void SceneReadLights(tinyxml2::XMLNode* root, std::vector<PointLight>& _p
 
         AreaLight areaLight(position, radiance, normal, extent);
 
-        std::cout << areaLight.extent << std::endl;
-
         _areaLights.push_back(areaLight);
         element = element->NextSiblingElement("AreaLight");
     }
@@ -557,6 +555,16 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
 
         Mesh m(triangleList, materialId - 1, false);
 
+        child = element->FirstChildElement("MotionBlur");
+        glm::vec3 motionBlurTranslationVector(0.0f);
+        if(child)
+        {
+            stream << child->GetText() << std::endl;
+            stream >> motionBlurTranslationVector.x >> motionBlurTranslationVector.y >> motionBlurTranslationVector.z;
+        }
+
+        m.translationVector = motionBlurTranslationVector;        
+
         child = element->FirstChildElement("Transformations");
         glm::mat4 model(1.0f);        
         if(child)
@@ -616,6 +624,16 @@ inline void SceneReadMeshInstances(tinyxml2::XMLNode* root, std::vector<Mesh>& _
         std::string resetTransform;
         MeshInstance meshInstance;
         meshInstance.materialId = materialId - 1;
+
+        child = element->FirstChildElement("MotionBlur");
+        glm::vec3 motionBlurTranslationVector(0.0f);
+        if(child)
+        {
+            stream << child->GetText() << std::endl;
+            stream >> motionBlurTranslationVector.x >> motionBlurTranslationVector.y >> motionBlurTranslationVector.z;
+        }
+
+        meshInstance.translationVector = motionBlurTranslationVector;
 
         child = element->FirstChildElement("Transformations");
         glm::mat4 model(1.0f);        
@@ -712,6 +730,17 @@ inline void SceneReadSpheres(tinyxml2::XMLNode* root, std::vector<Sphere>& _sphe
 
         Sphere sphere(centerVertex, radius, materialId - 1);
 
+        child = element->FirstChildElement("MotionBlur");
+        glm::vec3 motionBlurTranslationVector(0.0f);
+        if(child)
+        {
+            stream << child->GetText() << std::endl;
+            stream >> motionBlurTranslationVector.x >> motionBlurTranslationVector.y >> motionBlurTranslationVector.z;
+        }
+
+        sphere.translationVector = motionBlurTranslationVector;
+
+
         child = element->FirstChildElement("Transformations");
         glm::mat4 model(1.0f);        
         if(child)
@@ -776,6 +805,15 @@ inline void SceneReadTriangles(tinyxml2::XMLNode* root, std::vector<Triangle>& _
         Triangle tri(a, b, c);
         tri.materialId = materialId - 1;
 
+        child = element->FirstChildElement("MotionBlur");
+        glm::vec3 motionBlurTranslationVector(0.0f);
+        if(child)
+        {
+            stream << child->GetText() << std::endl;
+            stream >> motionBlurTranslationVector.x >> motionBlurTranslationVector.y >> motionBlurTranslationVector.z;
+        }
+
+        tri.translationVector = motionBlurTranslationVector;
 
         child = element->FirstChildElement("Transformations");
         glm::mat4 model(1.0f);        

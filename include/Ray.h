@@ -45,6 +45,8 @@ public:
     int materialIdCurrentlyIn;
 
     bool  isRefracting;
+
+    float time;
 };
 
 

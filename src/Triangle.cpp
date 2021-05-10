@@ -26,8 +26,10 @@ Triangle::Triangle(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 aNormal, glm
 bool Triangle::Intersect(const Ray& ray, IntersectionReport& report, float tmin, float tmax, float intersectionTestEpsilon, bool backfaceCulling)
 {
 
-    glm::vec3 newOrigin = (transformationMatrixInversed*glm::vec4(ray.origin, 1.0f));
-    glm::vec3 newDirection = (transformationMatrixInversed*glm::vec4(ray.direction, 0.0f));
+	glm::mat4 motionBlurTranslationMatrix = MotionBlurTranslate(ray.time);
+
+    glm::vec3 newOrigin = (transformationMatrixInversed*motionBlurTranslationMatrix*glm::vec4(ray.origin, 1.0f));
+    glm::vec3 newDirection = (transformationMatrixInversed*motionBlurTranslationMatrix*glm::vec4(ray.direction, 0.0f));
     Ray newRay(newOrigin, newDirection);
 
     report.d = FLT_MAX;
@@ -55,7 +57,8 @@ bool Triangle::Intersect(const Ray& ray, IntersectionReport& report, float tmin,
 	{
         report.d            = t;
 		report.intersection = ray.origin + t*ray.direction;
-        report.normal       = glm::normalize(this->transformationMatrixInverseTransposed * glm::vec4(this->normal, 0.0f));
+        report.normal       = glm::transpose(motionBlurTranslationMatrix)*this->transformationMatrixInverseTransposed * glm::vec4(this->normal, 0.0f);
+		report.normal       = glm::normalize(report.normal);
 
 		if(backfaceCulling)
 		{

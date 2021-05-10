@@ -51,6 +51,9 @@ Scene::Scene(const std::string& filepath)
     cameraVariableGenerator = new RandomGenerator(-halfAperture, halfAperture);
 
     areaLightPositionGenerator = new RandomGenerator(-0.5f, 0.5f);
+
+    motionBlurTimeGenerator = new RandomGenerator(0.0f, 1.0f);
+
     
 }
 
@@ -207,6 +210,9 @@ std::vector<RayWithWeigth> Scene::ComputePrimaryRays(int i, int j)
                 
             }
 
+            float time = motionBlurTimeGenerator->Generate();
+            fR.time = time;
+
             RayWithWeigth rww;
             rww.r = fR;
             rww.distX = std::fabs(0.5f - offsetX);
@@ -239,13 +245,14 @@ bool Scene::TestWorldIntersection(const Ray& ray, IntersectionReport& report, fl
     return result;
 }
 
-bool Scene::ShadowRayIntersection(float tmin, float tmax, float intersectionTestEpsilon, float shadowRayEpsilon, const glm::vec3& lightPosition, const IntersectionReport& report, bool backfaceCulling)
+bool Scene::ShadowRayIntersection(float tmin, float tmax, float intersectionTestEpsilon, float shadowRayEpsilon, const glm::vec3& lightPosition, const IntersectionReport& report, bool backfaceCulling, float time)
 {
 
     glm::vec3 direction = glm::normalize(lightPosition - report.intersection);
     glm::vec3 origin    = report.intersection + shadowRayEpsilon*report.normal;
     
     Ray ray(origin, direction);
+    ray.time = time;
 
     float dist = glm::length(lightPosition - report.intersection);
 
@@ -272,7 +279,7 @@ glm::vec3 Scene::ComputeDiffuseSpecular(const IntersectionReport& report, const 
 
     for(size_t i=0; i<_pointLights.size(); i++)
     {
-        if(ShadowRayIntersection(0, 2000, _intersectionTestEpsilon, _shadowRayEpsilon, _pointLights[i].position, report, true))
+        if(ShadowRayIntersection(0, 2000, _intersectionTestEpsilon, _shadowRayEpsilon, _pointLights[i].position, report, true, ray.time))
         {
             continue;
         }
@@ -304,7 +311,7 @@ glm::vec3 Scene::ComputeDiffuseSpecular(const IntersectionReport& report, const 
 
         glm::vec3 randomPoint = _areaLights[i].position + _areaLights[i].extent*(randomOffsetU*_areaLights[i].u + randomOffsetV*_areaLights[i].v);
 
-        if(ShadowRayIntersection(0, 2000, _intersectionTestEpsilon, _shadowRayEpsilon, randomPoint, report, true))
+        if(ShadowRayIntersection(0, 2000, _intersectionTestEpsilon, _shadowRayEpsilon, randomPoint, report, true, ray.time))
         {
             continue;
         }
@@ -419,6 +426,7 @@ glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, in
         glm::vec3 reflectedRayDir    = glm::normalize(glm::reflect(ray.direction, iR.normal));
 
         Ray reflected(reflectedRayOrigin, reflectedRayDir);
+        reflected.time = ray.time;
         reflected.isRefracting = ray.isRefracting;
         reflected.mediumCoeffBefore = ray.mediumCoeffBefore;
         reflected.mediumCoeffNow    = ray.mediumCoeffNow;
@@ -462,12 +470,14 @@ glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, in
                 tRay.mediumCoeffBefore = ray.mediumCoeffNow;
                 tRay.isRefracting = true;
                 tRay.materialIdCurrentlyIn = iR.materialId;
+                tRay.time = ray.time;
 
                 Ray reflected(reflectedRayOrigin, reflectedRayDir);
                 reflected.isRefracting = ray.isRefracting;
                 reflected.mediumCoeffBefore = ray.mediumCoeffBefore;
                 reflected.mediumCoeffNow = ray.mediumCoeffNow;
                 reflected.materialIdCurrentlyIn = ray.materialIdCurrentlyIn;
+                reflected.time = ray.time;
 
                 float rRpar = (tRay.mediumCoeffNow*cosTheta - 1*cosPhi)/
                               (tRay.mediumCoeffNow*cosTheta + 1*cosPhi);
@@ -498,6 +508,7 @@ glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, in
                 reflected.mediumCoeffBefore = ray.mediumCoeffBefore;
                 reflected.mediumCoeffNow = ray.mediumCoeffNow;
                 reflected.materialIdCurrentlyIn = ray.materialIdCurrentlyIn;
+                reflected.time = ray.time;
 
                 IntersectionReport report;
                 if(TestWorldIntersection(reflected, report, 0, 2000, _intersectionTestEpsilon, backfaceCulling))
@@ -536,12 +547,14 @@ glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, in
                 tRay.mediumCoeffNow = 1;
                 tRay.isRefracting = false;
                 tRay.materialIdCurrentlyIn = -1;
+                tRay.time = ray.time;
 
                 Ray reflected(reflectedRayOrigin, reflectedRayDir);
                 reflected.isRefracting = ray.isRefracting;
                 reflected.mediumCoeffBefore = ray.mediumCoeffBefore;
                 reflected.mediumCoeffNow = ray.mediumCoeffNow;
                 reflected.materialIdCurrentlyIn = ray.materialIdCurrentlyIn;
+                reflected.time = ray.time;
 
                 float rRpar = (1*cosTheta - tRay.mediumCoeffBefore*cosPhi)/
                               (1*cosTheta + tRay.mediumCoeffBefore*cosPhi);
@@ -573,6 +586,7 @@ glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, in
                 reflected.mediumCoeffBefore = ray.mediumCoeffBefore;
                 reflected.mediumCoeffNow = ray.mediumCoeffNow;
                 reflected.materialIdCurrentlyIn = ray.materialIdCurrentlyIn;
+                reflected.time = ray.time;
 
                 IntersectionReport report;
                 if(TestWorldIntersection(reflected, report, 0, 2000, _intersectionTestEpsilon, backfaceCulling))
@@ -606,6 +620,7 @@ glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, in
         reflected.mediumCoeffBefore = ray.mediumCoeffBefore;
         reflected.mediumCoeffNow    = ray.mediumCoeffNow;
         reflected.materialIdCurrentlyIn = ray.materialIdCurrentlyIn;
+        reflected.time = ray.time;
 
         IntersectionReport report;
         if(TestWorldIntersection(reflected, report, 0, 2000, _intersectionTestEpsilon, backfaceCulling))

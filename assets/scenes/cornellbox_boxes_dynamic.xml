@@ -11,7 +11,7 @@
             <NearPlane>-10 10 -10 6</NearPlane>
             <NearDistance>10.01</NearDistance>
             <ImageResolution>750 600</ImageResolution>
-            <NumSamples>81</NumSamples>
+            <NumSamples>900</NumSamples>
             <ImageName>cornellbox_boxes_dynamic.png</ImageName>
         </Camera>
     </Cameras>

@@ -33,8 +33,10 @@ bool Sphere::solveQuadratic(const float &a, const float &b, const float &c, floa
 bool Sphere::Intersect(const Ray& r, IntersectionReport& report, float tmin, float tmax, float intersectionEpsilon, bool backfaceCulling)
 {
 
-    glm::vec3 newOrigin = (transformationMatrixInversed*glm::vec4(r.origin, 1.0f));
-    glm::vec3 newDirection = (transformationMatrixInversed*glm::vec4(r.direction, 0.0f));
+    glm::mat4 motionBlurTranslationMatrix = MotionBlurTranslate(r.time);
+
+    glm::vec3 newOrigin = (transformationMatrixInversed*motionBlurTranslationMatrix*glm::vec4(r.origin, 1.0f));
+    glm::vec3 newDirection = (transformationMatrixInversed*motionBlurTranslationMatrix*glm::vec4(r.direction, 0.0f));
     Ray newRay(newOrigin, newDirection);
 
     report.intersection = glm::vec3(-FLT_MAX);
@@ -63,7 +65,7 @@ bool Sphere::Intersect(const Ray& r, IntersectionReport& report, float tmin, flo
             report.intersection = r.origin + t*r.direction;
             report.materialId   = materialId;
             glm::vec3 normal = (newRay.origin + t*newRay.direction) - center;
-            report.normal       = transformationMatrixInverseTransposed * glm::vec4(normal, 0.0f);
+            report.normal       = glm::transpose(motionBlurTranslationMatrix)*transformationMatrixInverseTransposed * glm::vec4(normal, 0.0f);
             report.normal = glm::normalize(report.normal);
             return true;
         }

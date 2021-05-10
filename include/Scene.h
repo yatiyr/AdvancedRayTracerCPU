@@ -44,6 +44,7 @@ private:
     RandomGenerator* randomVariableGenerator;
     RandomGenerator* cameraVariableGenerator;
     RandomGenerator* areaLightPositionGenerator;
+    RandomGenerator* motionBlurTimeGenerator;
     
     int _sampleNumber;
     std::vector<Sample> samples;
@@ -114,7 +115,8 @@ private:
                                float shadowRayEpsilon,
                                const glm::vec3& lightPosition,
                                const IntersectionReport& report,
-                               bool backfaceCulling);
+                               bool backfaceCulling,
+                               float time);
 
 
     glm::vec3 ComputeAmbientComponent(const IntersectionReport& report);
