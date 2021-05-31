@@ -20,7 +20,7 @@
         <AmbientLight>20 20 20</AmbientLight>
         <PointLight id="1">
             <Position>0 4 2</Position>
-            <Intensity>2500 2500 2500</Intensity>
+            <Intensity>1800 1800 1800</Intensity>
         </PointLight>
     </Lights>
 

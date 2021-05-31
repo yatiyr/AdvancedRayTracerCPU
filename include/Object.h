@@ -5,6 +5,7 @@
 #include <Structures.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <Texture.h>
 
 class Object
 {
@@ -14,6 +15,14 @@ public:
     glm::mat4 transformationMatrixInverseTransposed;
 
     glm::vec3 translationVector;
+
+    Texture *diffuseMap;
+    Texture *specularMap;
+    Texture *normalMap;
+    Texture *bumpMap;
+    Texture *replaceAllMap;
+    Texture *emissionMap;
+    Texture *roughnessMap;
 
     virtual bool Intersect(const Ray& ray, IntersectionReport& report, float tmin, float tmax, float intersectionEpsilon, bool backfaceCulling) = 0;
 

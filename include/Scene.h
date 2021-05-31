@@ -29,6 +29,8 @@
 #include <RandomGenerator.h>
 #include <random>
 
+#include <Texture.h>
+
 struct WorkGroup
 {
     int start;
@@ -38,6 +40,12 @@ struct WorkGroup
 class Scene
 {
 private:
+
+    Texture *_backgroundTexture;
+
+    std::vector<Texture*> _textures;
+    std::vector<Image*>  _images;
+
 
     bool backfaceCulling;
 
@@ -70,6 +78,7 @@ private:
     glm::vec3               _ambientLight; 
 
     std::vector<glm::vec3>     _vertexData;
+    std::vector<glm::vec2>     _texCoordData;
     std::vector<glm::vec3>     _normalData;
     std::vector<int>           _neighborCount;
 

@@ -13,7 +13,7 @@
             <FocusDistance>21</FocusDistance>
             <ApertureSize>1.5</ApertureSize>
             <ImageResolution>800 800</ImageResolution>
-            <NumSamples>1600</NumSamples>
+            <NumSamples>900</NumSamples>
             <ImageName>spheres_dof.png</ImageName>
         </Camera>
     </Cameras>

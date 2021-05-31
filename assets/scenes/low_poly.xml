@@ -1,5 +1,5 @@
 <Scene>
-    <BackgroundColor>114 136 123</BackgroundColor>
+    <BackgroundColor>114 0 123</BackgroundColor>
     <ShadowRayEpsilon>1e-3</ShadowRayEpsilon>
     <IntersectionTestEpsilon>1e-6</IntersectionTestEpsilon>
     <Cameras>

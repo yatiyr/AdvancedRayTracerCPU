@@ -384,6 +384,20 @@ inline void SceneReadVertexData(tinyxml2::XMLNode* root, std::vector<glm::vec3>&
     stream.clear();
 }
 
+inline void SceneReadTexCoordData(tinyxml2::XMLNode* root, std::vector<glm::vec2>& _texCoordData)
+{
+    std::stringstream stream;
+    auto element = root->FirstChildElement("TexCoordData");
+    stream << element->GetText() << std::endl;
+    glm::vec2 coord;
+    while(!(stream >> coord.x).eof())
+    {
+        stream >> coord.y;
+        _texCoordData.push_back(coord);
+    }
+    stream.clear();
+}
+
 inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes, std::vector<glm::vec3>& _vertexData, std::vector<glm::mat4>& _rotationMatrices, std::vector<glm::mat4>& _scalingMatrices, std::vector<glm::mat4>& _translationMatrices)
 {
     std::stringstream stream;

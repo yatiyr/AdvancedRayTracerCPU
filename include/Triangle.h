@@ -17,6 +17,10 @@ public:
     glm::vec3 bNormal;
     glm::vec3 cNormal;
 
+    glm::vec2 texCoordA;
+    glm::vec2 texCoordB;
+    glm::vec2 texCoordC;
+
     size_t materialId;
 
     glm::vec3 normal;
