@@ -6,11 +6,17 @@
 #include <Triangle.h>
 #include <MeshInstance.h>
 #include <Sphere.h>
+#include <Texture.h>
+#include <Image.h>
 #include <sstream>
 #include <happly.h>
 #include <map>
 
 const double EULER =  2.71828182845904523536;
+
+#ifndef M_PI
+    #define M_PI 3.14159265358979323846
+#endif
 
 inline std::vector<std::string> split(std::string text)
 {
@@ -384,18 +390,98 @@ inline void SceneReadVertexData(tinyxml2::XMLNode* root, std::vector<glm::vec3>&
     stream.clear();
 }
 
+inline void SceneReadTextures(tinyxml2::XMLNode* root, std::vector<Image*>& _images, std::vector<Texture*>& _textures)
+{
+
+    // TODO: BAKKKKK
+    auto textures = root->FirstChildElement("Textures");
+    auto images = textures->FirstChildElement("Images");
+
+    if(images)
+        SceneReadImages(images, _images);
+    if(textures)
+        SceneReadTextureMaps(textures, _images, _textures);
+
+}
+
+inline void SceneReadImages(tinyxml2::XMLNode* imagesNode, std::vector<Image*>& _images)
+{
+    std::stringstream stream;
+    auto element = imagesNode->FirstChildElement("Image");
+
+    while(element)
+    {
+        std::string filename;
+        
+        stream << element->GetText();
+        stream >> filename;
+        
+        std::string path = std::string(ROOT_DIR) + filename;
+        Image* newImage = new Image(path.c_str());
+        _images.push_back(newImage);
+
+        element = element->NextSiblingElement("Image");
+    }
+}
+
+inline void SceneReadTextureMaps(tinyxml2::XMLNode* texturesNode, std::vector<Image*>& _images, std::vector<Texture*>& _textures)
+{
+    auto element = texturesNode->FirstChildElement("TextureMap");
+
+    // TODO: BAKKKKK!!
+    while(element)
+    {
+        if(element->Attribute("type"))
+        {
+            std::string texType(element->Attribute("type"));
+
+            Texture* tex = new Texture();
+
+            if(texType == "perlin")
+            {
+                tex->type = TextureType::PERLIN;
+
+                auto child = element->FirstChildElement("NoiseConversion");
+                if(child)
+                {
+                    if(std::strcmp(child->GetText(), "linear") == 0)
+                    {
+                        tex->noiseConversion = NoiseConversionType::LINEAR;
+                    }
+                    else if(std::strcmp(child->GetText(), "absval") == 0)
+                    {
+                        tex->noiseConversion = NoiseConversionType::ABSVAL;
+                    }
+                }
+            }
+            else if(texType == "image")
+            {
+
+            }
+            else if(texType == "checkerboard")
+            {
+
+            }
+        }
+    }
+}
+
+
 inline void SceneReadTexCoordData(tinyxml2::XMLNode* root, std::vector<glm::vec2>& _texCoordData)
 {
     std::stringstream stream;
     auto element = root->FirstChildElement("TexCoordData");
-    stream << element->GetText() << std::endl;
-    glm::vec2 coord;
-    while(!(stream >> coord.x).eof())
+    if(element)
     {
-        stream >> coord.y;
-        _texCoordData.push_back(coord);
-    }
-    stream.clear();
+        stream << element->GetText() << std::endl;
+        glm::vec2 coord;
+        while(!(stream >> coord.x).eof())
+        {
+            stream >> coord.y;
+            _texCoordData.push_back(coord);
+        }
+        stream.clear();
+    };
 }
 
 inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes, std::vector<glm::vec3>& _vertexData, std::vector<glm::mat4>& _rotationMatrices, std::vector<glm::mat4>& _scalingMatrices, std::vector<glm::mat4>& _translationMatrices)
