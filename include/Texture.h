@@ -5,6 +5,17 @@
 #include <glm/glm.hpp>
 #include <math.h>
 #include <algorithm>
+#include <PerlinNoiseGenerator.h>
+
+enum MapType
+{
+    DIFFUSE_MAP   = 0,
+    SPECULAR_MAP  = 1,
+    EMISSION_MAP  = 2,
+    NORMAL_MAP    = 3,
+    BUMP_MAP      = 4,
+    ROUGHNESS_MAP = 5
+};
 
 enum InterpolationType
 {
@@ -41,6 +52,7 @@ class Texture
 public:
 
     // Texture
+    MapType mapType;
     TextureType type;
     InterpolationType interpolationType;
     DecalMode decalMode;
@@ -48,11 +60,12 @@ public:
     float bumpFactor;
 
     // Image Texture
-    Image *image;    
+    Image* image;    
     int normalizer;
 
 
     // Perlin Texture
+    PerlinNoiseGenerator noiseGenerator;
     NoiseConversionType noiseConversion;
     float noiseScale;
 
@@ -109,11 +122,22 @@ public:
         this->image = image;
     }
 
+    float FetchPerlin(glm::vec3 point)
+    {
+        glm::vec3 scaledPoint = point * noiseScale;
+        return noiseGenerator.GenerateNoise(scaledPoint);
+    }
+
     glm::vec3 Fetch(float u, float v)
     {
 
         if(type == TextureType::IMAGE)
         {
+            if(u < 0 || u > 1)
+                u -= std::floor(u);
+            if(v < 0 || v > 1)
+                v -= std::floor(v);
+
             float i = u * image->width;
             float j = v * image->height;
 
@@ -122,7 +146,13 @@ public:
                 int iI = std::round(i);
                 int iJ = std::round(j);
 
-                return image->get(iI, iJ);
+                glm::vec3 result = image->get(iI, iJ);
+
+                result.x /= normalizer;
+                result.y /= normalizer;
+                result.z /= normalizer;
+
+                return result;
             }
             else if(interpolationType == InterpolationType::BILINEAR)
             {
@@ -133,10 +163,16 @@ public:
                 float a = i - iI;
                 float b = j - iJ;           
 
-                return (1-a) * (1-b) * image->get(iI, iJ) +
-                       (1-a) *   b   * image->get(iI, iJ + 1) +
-                        a    * (1-b) * image->get(iI + 1, iJ) +
-                        a    *   b   * image->get(iI + 1, iJ + 1);
+                glm::vec3 result = (1-a) * (1-b) * image->get(iI, iJ) +
+                                   (1-a) *   b   * image->get(iI, iJ + 1) +
+                                    a    * (1-b) * image->get(iI + 1, iJ) +
+                                    a    *   b   * image->get(iI + 1, iJ + 1);
+
+                result.x /= normalizer;
+                result.y /= normalizer;
+                result.z /= normalizer;
+
+                return result;
             }
         }
 

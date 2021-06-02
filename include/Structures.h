@@ -100,9 +100,39 @@ struct Indices
 struct IntersectionReport
 {
     alignas(16) glm::vec3 intersection;
+
+    // Normal or bump map can change normal
     alignas(16) glm::vec3 normal;
-    float d;    
+
+    alignas(16) glm::vec3 texDiffuseReflectance;
+    alignas(16) glm::vec3 texSpecularReflectance;
+
     int materialId;
+
+    float d;
+    float texRoughness;
+
+    bool hasTexture;
+
+    // If true, diffuseReflectance becomes final color
+    bool replaceAll;
+
+    // 1: Replace KD
+    // 2: Blend KD
+    int texDiffuseKdMode;
+    int texSpecularKdMode;
+
+    uint8_t enabledTextures;
+
+    glm::vec2 texCoord;
+
+    glm::vec3 coordA;
+    glm::vec3 coordB;
+    glm::vec3 coordC;
+
+    glm::vec2 texCoordA;
+    glm::vec2 texCoordB;
+    glm::vec2 texCoordC;
 
 };
 

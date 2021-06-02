@@ -390,20 +390,6 @@ inline void SceneReadVertexData(tinyxml2::XMLNode* root, std::vector<glm::vec3>&
     stream.clear();
 }
 
-inline void SceneReadTextures(tinyxml2::XMLNode* root, std::vector<Image*>& _images, std::vector<Texture*>& _textures)
-{
-
-    // TODO: BAKKKKK
-    auto textures = root->FirstChildElement("Textures");
-    auto images = textures->FirstChildElement("Images");
-
-    if(images)
-        SceneReadImages(images, _images);
-    if(textures)
-        SceneReadTextureMaps(textures, _images, _textures);
-
-}
-
 inline void SceneReadImages(tinyxml2::XMLNode* imagesNode, std::vector<Image*>& _images)
 {
     std::stringstream stream;
@@ -424,7 +410,7 @@ inline void SceneReadImages(tinyxml2::XMLNode* imagesNode, std::vector<Image*>& 
     }
 }
 
-inline void SceneReadTextureMaps(tinyxml2::XMLNode* texturesNode, std::vector<Image*>& _images, std::vector<Texture*>& _textures)
+inline void SceneReadTextureMaps(tinyxml2::XMLNode* texturesNode, std::vector<Image*>& _images, std::vector<Texture*>& _textures, Texture* _backgroundTexture)
 {
     auto element = texturesNode->FirstChildElement("TextureMap");
 
@@ -436,36 +422,184 @@ inline void SceneReadTextureMaps(tinyxml2::XMLNode* texturesNode, std::vector<Im
             std::string texType(element->Attribute("type"));
 
             Texture* tex = new Texture();
+            tex->mapType = MapType::DIFFUSE_MAP;
 
             if(texType == "perlin")
-            {
+                tex->type = TextureType::PERLIN;
+            else if(texType == "image")
+                tex->type = TextureType::IMAGE;
+            else if(texType == "checkerboard")
+                tex->type = TextureType::CHECKERBOARD;
+            else
                 tex->type = TextureType::PERLIN;
 
-                auto child = element->FirstChildElement("NoiseConversion");
-                if(child)
+
+            auto child = element->FirstChildElement("DecalMode");
+            if(child)
+            {
+                if(std::strcmp(child->GetText(), "replace_kd") == 0)
+                    tex->decalMode = DecalMode::REPLACE_KD;
+                else if(std::strcmp(child->GetText(), "replace_background") == 0)
+                    tex->decalMode = DecalMode::REPLACE_BACKGROUND;
+                else if(std::strcmp(child->GetText(), "blend_kd") == 0)
+                    tex->decalMode = DecalMode::BLEND_KD;
+                else if(std::strcmp(child->GetText(), "replace_all") == 0)
+                    tex->decalMode = DecalMode::REPLACE_ALL;
+                else if(std::strcmp(child->GetText(), "replace_normal") == 0)
                 {
-                    if(std::strcmp(child->GetText(), "linear") == 0)
-                    {
-                        tex->noiseConversion = NoiseConversionType::LINEAR;
-                    }
-                    else if(std::strcmp(child->GetText(), "absval") == 0)
-                    {
-                        tex->noiseConversion = NoiseConversionType::ABSVAL;
-                    }
+                    tex->decalMode = DecalMode::REPLACE_NORMAL;
+                    tex->mapType   = MapType::NORMAL_MAP;
+                }
+                else if(std::strcmp(child->GetText(), "bump_normal") == 0)
+                {
+                    tex->decalMode = DecalMode::BUMP_NORMAL;
+                    tex->mapType   = MapType::BUMP_MAP;
+                }
+                
+            }
+            else
+            {
+                tex->decalMode = DecalMode::REPLACE_ALL;
+            }
+
+            child = element->FirstChildElement("NoiseConversion");
+            if(child)
+            {
+                if(std::strcmp(child->GetText(), "linear") == 0)
+                {
+                    tex->noiseConversion = NoiseConversionType::LINEAR;
+                }
+                else if(std::strcmp(child->GetText(), "absval") == 0)
+                {
+                    tex->noiseConversion = NoiseConversionType::ABSVAL;
                 }
             }
-            else if(texType == "image")
+            else
             {
-
+                tex->noiseConversion = NoiseConversionType::LINEAR;
             }
-            else if(texType == "checkerboard")
+
+            child = element->FirstChildElement("NoiseScale");
+            if(child)
             {
-
+                std::stringstream sstream;
+                sstream << child->GetText() << std::endl;
+                sstream >> tex->noiseScale;
             }
+            else
+            {
+                tex->noiseScale = 1;
+            }
+
+            child = element->FirstChildElement("ImageId");
+            if(child)
+            {
+                std::stringstream ss;
+                ss << child->GetText() << std::endl;
+                int index = 1;
+                ss >> index;
+                tex->image = _images[index - 1];
+            }
+
+            child = element->FirstChildElement("Interpolation");
+            if(child)
+            {
+                if(std::strcmp(child->GetText(), "nearest") == 0)
+                    tex->interpolationType = InterpolationType::NEAREST_NEIGHBOR;
+                else
+                    tex->interpolationType = InterpolationType::BILINEAR;
+            }
+            else
+                tex->interpolationType = InterpolationType::BILINEAR;
+
+            
+            child = element->FirstChildElement("Normalizer");
+            if(child)
+            {
+                std::stringstream ss;
+                ss << child->GetText() << std::endl;
+                int normalizer = 1;
+                ss >> normalizer;
+                tex->normalizer = normalizer;
+            }
+            else
+                tex->normalizer = 1;
+
+            child = element->FirstChildElement("BumpFactor");
+            if(child)
+            {
+                std::stringstream ss;
+                ss << child->GetText() << std::endl;
+                float factor = 0.1;
+                ss >> factor;
+                tex->bumpFactor = factor;
+            }
+            else
+                tex->bumpFactor = 0.1;
+
+
+            child = element->FirstChildElement("BlackColor");
+            if(child)
+            {
+                std::stringstream ss;
+                ss << child->GetText() << std::endl;                
+                ss >> tex->blackColor.x >> tex->blackColor.y >> tex->blackColor.z;
+            }
+            else 
+                tex->blackColor = glm::vec3(0.4f, 0.4f, 0.4f);
+
+            child = element->FirstChildElement("WhiteColor");
+            if(child)
+            {
+                std::stringstream ss;
+                ss << child->GetText() << std::endl;
+                ss >> tex->whiteColor.x >> tex->whiteColor.y >> tex->whiteColor.z;
+            }
+            else
+                tex->whiteColor = glm::vec3(10.f, 10.f, 10.f);
+
+            child = element->FirstChildElement("Scale");
+            if(child)
+            {
+                std::stringstream ss;
+                ss << child->GetText() << std::endl;
+                ss >> tex->scale;
+            }
+            else 
+                tex->scale = 5;
+
+            child = element->FirstChildElement("Offset");
+            if(child)
+            {
+                std::stringstream ss;
+                ss << child->GetText() << std::endl;
+                ss >> tex->offset;
+            }
+            else 
+                tex->offset = 0;
+            
+            _textures.push_back(tex);
+
+            if(tex->decalMode = DecalMode::REPLACE_BACKGROUND)
+                _backgroundTexture = tex;
         }
+
+        element = element->NextSiblingElement("TextureMap");
     }
 }
 
+inline void SceneReadTextures(tinyxml2::XMLNode* root, std::vector<Image*>& _images, std::vector<Texture*>& _textures, Texture* _backgroundTexture)
+{
+
+    auto textures = root->FirstChildElement("Textures");
+    auto images = textures->FirstChildElement("Images");
+
+    if(images)
+        SceneReadImages(images, _images);
+    if(textures)
+        SceneReadTextureMaps(textures, _images, _textures, _backgroundTexture);
+
+}
 
 inline void SceneReadTexCoordData(tinyxml2::XMLNode* root, std::vector<glm::vec2>& _texCoordData)
 {
@@ -484,7 +618,7 @@ inline void SceneReadTexCoordData(tinyxml2::XMLNode* root, std::vector<glm::vec2
     };
 }
 
-inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes, std::vector<glm::vec3>& _vertexData, std::vector<glm::mat4>& _rotationMatrices, std::vector<glm::mat4>& _scalingMatrices, std::vector<glm::mat4>& _translationMatrices)
+inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes, std::vector<Texture*>& _textures, std::vector<glm::vec3>& _vertexData, std::vector<glm::vec2>& _texCoordData, std::vector<glm::mat4>& _rotationMatrices, std::vector<glm::mat4>& _scalingMatrices, std::vector<glm::mat4>& _translationMatrices, std::vector<glm::mat4>& _compositeMatrices)
 {
     std::stringstream stream;
     // Get Meshes
@@ -494,10 +628,19 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
 
     while(element)
     {
+        bool softShading = false;
+
+        if(element->Attribute("shadingMode"))
+        {
+            if(std::strcmp(element->Attribute("shadingMode"), "soft"))
+                softShading = true;
+        }
+
         size_t materialId;
         auto child = element->FirstChildElement("Material");
         stream << child->GetText() << std::endl;
         stream >> materialId;
+
 
         child = element->FirstChildElement("Faces");
         stream << child->GetText() << std::endl;
@@ -608,7 +751,7 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
                     Triangle tri2(a, b, c, normals[fInd[i][0]], normals[fInd[i][2]], normals[fInd[i][3]]);
                     triangleList.push_back(tri2);
 
-                }
+                }              
                 
             }
 
@@ -618,6 +761,14 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
             Indices indices;
 
             std::vector<Indices> indexVector;
+
+            int vertexOffset = 0;
+            int textureOffset = 0;
+            
+            if(child->Attribute("vertexOffset"))
+                vertexOffset = std::stoi(child->Attribute("vertexOffset"));
+            if(child->Attribute("textureOffset"))
+                textureOffset = std::stoi(child->Attribute("textureOffset"));
 
             for(size_t i=0; i<_vertexData.size(); i++)
             {
@@ -632,20 +783,20 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
 
                 indexVector.push_back(indices);
 
-                glm::vec3 a = _vertexData[indices.a - 1];
-                glm::vec3 b = _vertexData[indices.b - 1];
-                glm::vec3 c = _vertexData[indices.c - 1];            
+                glm::vec3 a = _vertexData[indices.a + vertexOffset - 1];
+                glm::vec3 b = _vertexData[indices.b + vertexOffset - 1];
+                glm::vec3 c = _vertexData[indices.c + vertexOffset - 1];            
                 
 
                 glm::vec3 normal = glm::normalize(glm::cross((b-a), (c-a)));
 
-                normals[indices.a - 1] += normal;
-                normals[indices.b - 1] += normal;
-                normals[indices.c - 1] += normal;
+                normals[indices.a + vertexOffset - 1] += normal;
+                normals[indices.b + vertexOffset - 1] += normal;
+                normals[indices.c + vertexOffset - 1] += normal;
 
-                neighborCount[indices.a - 1] += 1;
-                neighborCount[indices.b - 1] += 1;
-                neighborCount[indices.c - 1] += 1;
+                neighborCount[indices.a + vertexOffset - 1] += 1;
+                neighborCount[indices.b + vertexOffset - 1] += 1;
+                neighborCount[indices.c + vertexOffset - 1] += 1;
 
             }
 
@@ -658,18 +809,57 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
             for(size_t i=0; i<indexVector.size(); i++)
             {
 
-                glm::vec3 a = _vertexData[indexVector[i].a - 1];
-                glm::vec3 b = _vertexData[indexVector[i].b - 1];                
-                glm::vec3 c = _vertexData[indexVector[i].c - 1];                
+                glm::vec3 a = _vertexData[indexVector[i].a + vertexOffset - 1];
+                glm::vec3 b = _vertexData[indexVector[i].b + vertexOffset - 1];                
+                glm::vec3 c = _vertexData[indexVector[i].c + vertexOffset - 1];                
 
-                Triangle tri(a, b, c, normals[indexVector[i].a - 1], normals[indexVector[i].b - 1], normals[indexVector[i].c - 1]);
+                Triangle tri(a, b, c, normals[indexVector[i].a + vertexOffset - 1], normals[indexVector[i].b + vertexOffset - 1], normals[indexVector[i].c + vertexOffset - 1]);
+
+                tri.texCoordA = _texCoordData[indexVector[i].a + textureOffset - 1];
+                tri.texCoordB = _texCoordData[indexVector[i].b + textureOffset - 1];
+                tri.texCoordC = _texCoordData[indexVector[i].c + textureOffset - 1];
 
                 triangleList.push_back(tri);
             }
         }
         stream.clear();
         
-        Mesh m(triangleList, materialId - 1, false);
+        Mesh m(triangleList, materialId - 1, softShading);
+
+        child = element->FirstChildElement("Textures");
+        if(child)
+        {
+            stream << child->GetText() << std::endl;
+            int texIndex;
+            while(!(stream >> texIndex).eof())
+            {
+                if(_textures[texIndex - 1]->mapType == MapType::BUMP_MAP)
+                {
+                    m.bumpMap = _textures[texIndex - 1];
+                }
+                else if(_textures[texIndex - 1]->mapType == MapType::DIFFUSE_MAP)
+                {
+                    m.diffuseMap = _textures[texIndex - 1];
+                }
+                else if(_textures[texIndex - 1]->mapType == MapType::EMISSION_MAP)
+                {
+                    m.emissionMap = _textures[texIndex - 1];
+                }
+                else if(_textures[texIndex - 1]->mapType == MapType::NORMAL_MAP)
+                {
+                    m.normalMap = _textures[texIndex - 1];
+                }
+                else if(_textures[texIndex - 1]->mapType == MapType::ROUGHNESS_MAP)
+                {
+                    m.roughnessMap = _textures[texIndex - 1];
+                }
+                else if(_textures[texIndex - 1]->mapType == MapType::SPECULAR_MAP)
+                {
+                    m.specularMap = _textures[texIndex - 1];
+                }
+            }
+        }
+        stream.clear();
 
         child = element->FirstChildElement("MotionBlur");
         glm::vec3 motionBlurTranslationVector(0.0f);
@@ -709,6 +899,10 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
                 {
                     model = _scalingMatrices[id - 1] * model;
                 }
+                else if(type == 'c')
+                {
+                    model = _compositeMatrices[id - 1] * model;
+                }
             }
         }
         m.transformationMatrix = model;
@@ -722,7 +916,7 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
     stream.clear();
 }
 
-inline void SceneReadMeshInstances(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes, std::vector<MeshInstance>& _meshInstances, std::vector<glm::mat4>& _rotationMatrices, std::vector<glm::mat4>& _scalingMatrices, std::vector<glm::mat4>& _translationMatrices)
+inline void SceneReadMeshInstances(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes, std::vector<Texture*>& _textures, std::vector<MeshInstance>& _meshInstances, std::vector<glm::mat4>& _rotationMatrices, std::vector<glm::mat4>& _scalingMatrices, std::vector<glm::mat4>& _translationMatrices, std::vector<glm::mat4>& _compositeMatrices)
 {
     std::stringstream stream;
     // Get Meshes
@@ -749,6 +943,41 @@ inline void SceneReadMeshInstances(tinyxml2::XMLNode* root, std::vector<Mesh>& _
             stream << child->GetText() << std::endl;
             stream >> motionBlurTranslationVector.x >> motionBlurTranslationVector.y >> motionBlurTranslationVector.z;
         }
+
+        child = element->FirstChildElement("Textures");
+        if(child)
+        {
+            stream << child->GetText() << std::endl;
+            int texIndex;
+            while(!(stream >> texIndex).eof())
+            {
+                if(_textures[texIndex - 1]->mapType == MapType::BUMP_MAP)
+                {
+                    meshInstance.bumpMap = _textures[texIndex - 1];
+                }
+                else if(_textures[texIndex - 1]->mapType == MapType::DIFFUSE_MAP)
+                {
+                    meshInstance.diffuseMap = _textures[texIndex - 1];
+                }
+                else if(_textures[texIndex - 1]->mapType == MapType::EMISSION_MAP)
+                {
+                    meshInstance.emissionMap = _textures[texIndex - 1];
+                }
+                else if(_textures[texIndex - 1]->mapType == MapType::NORMAL_MAP)
+                {
+                    meshInstance.normalMap = _textures[texIndex - 1];
+                }
+                else if(_textures[texIndex - 1]->mapType == MapType::ROUGHNESS_MAP)
+                {
+                    meshInstance.roughnessMap = _textures[texIndex - 1];
+                }
+                else if(_textures[texIndex - 1]->mapType == MapType::SPECULAR_MAP)
+                {
+                    meshInstance.specularMap = _textures[texIndex - 1];
+                }
+            }
+        }
+        stream.clear();        
 
         meshInstance.translationVector = motionBlurTranslationVector;
 
@@ -778,6 +1007,10 @@ inline void SceneReadMeshInstances(tinyxml2::XMLNode* root, std::vector<Mesh>& _
                 else if(type == 's')
                 {
                     model = _scalingMatrices[id - 1] * model;
+                }
+                else if(type == 'c')
+                {
+                    model = _compositeMatrices[id - 1] * model;
                 }
             }
         }     
@@ -818,7 +1051,7 @@ inline void SceneReadMeshInstances(tinyxml2::XMLNode* root, std::vector<Mesh>& _
 }
 
 
-inline void SceneReadSpheres(tinyxml2::XMLNode* root, std::vector<Sphere>& _spheres, std::vector<glm::vec3>& _vertexData, std::vector<glm::mat4>& _rotationMatrices, std::vector<glm::mat4>& _scalingMatrices, std::vector<glm::mat4>& _translationMatrices)
+inline void SceneReadSpheres(tinyxml2::XMLNode* root, std::vector<Sphere>& _spheres, std::vector<Texture*>& _textures, std::vector<glm::vec3>& _vertexData, std::vector<glm::mat4>& _rotationMatrices, std::vector<glm::mat4>& _scalingMatrices, std::vector<glm::mat4>& _translationMatrices, std::vector<glm::mat4>& _compositeMatrices)
 {
     std::stringstream stream;
     // Get Spheres
@@ -846,6 +1079,41 @@ inline void SceneReadSpheres(tinyxml2::XMLNode* root, std::vector<Sphere>& _sphe
         glm::vec3 centerVertex = _vertexData[centerVertexId - 1];
 
         Sphere sphere(centerVertex, radius, materialId - 1);
+
+        child = element->FirstChildElement("Textures");
+        if(child)
+        {
+            stream << child->GetText() << std::endl;
+            int texIndex;
+            while(!(stream >> texIndex).eof())
+            {
+                if(_textures[texIndex - 1]->mapType == MapType::BUMP_MAP)
+                {
+                    sphere.bumpMap = _textures[texIndex - 1];
+                }
+                else if(_textures[texIndex - 1]->mapType == MapType::DIFFUSE_MAP)
+                {
+                    sphere.diffuseMap = _textures[texIndex - 1];
+                }
+                else if(_textures[texIndex - 1]->mapType == MapType::EMISSION_MAP)
+                {
+                    sphere.emissionMap = _textures[texIndex - 1];
+                }
+                else if(_textures[texIndex - 1]->mapType == MapType::NORMAL_MAP)
+                {
+                    sphere.normalMap = _textures[texIndex - 1];
+                }
+                else if(_textures[texIndex - 1]->mapType == MapType::ROUGHNESS_MAP)
+                {
+                    sphere.roughnessMap = _textures[texIndex - 1];
+                }
+                else if(_textures[texIndex - 1]->mapType == MapType::SPECULAR_MAP)
+                {
+                    sphere.specularMap = _textures[texIndex - 1];
+                }
+            }
+        }
+        stream.clear();          
 
         child = element->FirstChildElement("MotionBlur");
         glm::vec3 motionBlurTranslationVector(0.0f);
@@ -885,6 +1153,10 @@ inline void SceneReadSpheres(tinyxml2::XMLNode* root, std::vector<Sphere>& _sphe
                 {
                     model = _scalingMatrices[id - 1] * model;
                 }
+                else if(type == 'c')
+                {
+                    model = _compositeMatrices[id -1] * model;
+                }
             }
         }
         sphere.transformationMatrix = model;
@@ -896,7 +1168,7 @@ inline void SceneReadSpheres(tinyxml2::XMLNode* root, std::vector<Sphere>& _sphe
     stream.clear();
 }
 
-inline void SceneReadTriangles(tinyxml2::XMLNode* root, std::vector<Triangle>& _triangles, std::vector<glm::vec3>& _vertexData, std::vector<glm::mat4>& _rotationMatrices, std::vector<glm::mat4>& _scalingMatrices, std::vector<glm::mat4>& _translationMatrices)
+inline void SceneReadTriangles(tinyxml2::XMLNode* root, std::vector<Triangle>& _triangles, std::vector<Texture*>& _textures, std::vector<glm::vec3>& _vertexData, std::vector<glm::vec2>& _texCoordData, std::vector<glm::mat4>& _rotationMatrices, std::vector<glm::mat4>& _scalingMatrices, std::vector<glm::mat4>& _translationMatrices, std::vector<glm::mat4>& _compositeMatrices)
 {
     std::stringstream stream;
     // Get Triangles
@@ -912,15 +1184,63 @@ inline void SceneReadTriangles(tinyxml2::XMLNode* root, std::vector<Triangle>& _
         stream >> materialId;
 
         child = element->FirstChildElement("Indices");
+
+        int vertexOffset = 0;
+        int textureOffset = 0;
+            
+        if(child->Attribute("vertexOffset"))
+            vertexOffset = std::stoi(child->Attribute("vertexOffset"));
+        if(child->Attribute("textureOffset"))
+            textureOffset = std::stoi(child->Attribute("textureOffset"));        
+
         stream << child->GetText() << std::endl;
         stream >> indices.a >> indices.b >> indices.c;
         
-        glm::vec3 a = _vertexData[indices.a - 1];
-        glm::vec3 b = _vertexData[indices.b - 1];
-        glm::vec3 c = _vertexData[indices.c - 1];
+        glm::vec3 a = _vertexData[indices.a + vertexOffset - 1];
+        glm::vec3 b = _vertexData[indices.b + vertexOffset - 1];
+        glm::vec3 c = _vertexData[indices.c + vertexOffset - 1];
 
         Triangle tri(a, b, c);
+        tri.texCoordA = _texCoordData[indices.a + textureOffset - 1];
+        tri.texCoordB = _texCoordData[indices.b + textureOffset - 1];
+        tri.texCoordC = _texCoordData[indices.c + textureOffset - 1];
+
         tri.materialId = materialId - 1;
+
+        child = element->FirstChildElement("Textures");
+        if(child)
+        {
+            stream << child->GetText() << std::endl;
+            int texIndex;
+            while(!(stream >> texIndex).eof())
+            {
+                if(_textures[texIndex - 1]->mapType == MapType::BUMP_MAP)
+                {
+                    tri.bumpMap = _textures[texIndex - 1];
+                }
+                else if(_textures[texIndex - 1]->mapType == MapType::DIFFUSE_MAP)
+                {
+                    tri.diffuseMap = _textures[texIndex - 1];
+                }
+                else if(_textures[texIndex - 1]->mapType == MapType::EMISSION_MAP)
+                {
+                    tri.emissionMap = _textures[texIndex - 1];
+                }
+                else if(_textures[texIndex - 1]->mapType == MapType::NORMAL_MAP)
+                {
+                    tri.normalMap = _textures[texIndex - 1];
+                }
+                else if(_textures[texIndex - 1]->mapType == MapType::ROUGHNESS_MAP)
+                {
+                    tri.roughnessMap = _textures[texIndex - 1];
+                }
+                else if(_textures[texIndex - 1]->mapType == MapType::SPECULAR_MAP)
+                {
+                    tri.specularMap = _textures[texIndex - 1];
+                }
+            }
+        }
+        stream.clear(); 
 
         child = element->FirstChildElement("MotionBlur");
         glm::vec3 motionBlurTranslationVector(0.0f);
@@ -959,6 +1279,10 @@ inline void SceneReadTriangles(tinyxml2::XMLNode* root, std::vector<Triangle>& _
                 {
                     model = _scalingMatrices[id - 1] * model;
                 }
+                else if(type == 'c')
+                {
+                    model = _compositeMatrices[id - 1] * model;
+                }                
             }
         }
         tri.transformationMatrix = model;

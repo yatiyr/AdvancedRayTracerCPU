@@ -11,7 +11,7 @@ Renderer::~Renderer()
 
 }
 
-uint8_t* Renderer::FloatToUint8(float* pixels, int width, int height)
+uint8_t* Renderer::GiveResult(uint8_t* pixels, int width, int height)
 {
     // we will omit alpha channel
     uint8_t* res = new uint8_t[width * height * 3];
@@ -22,18 +22,14 @@ uint8_t* Renderer::FloatToUint8(float* pixels, int width, int height)
     {
         for(int i=0; i<height; i++)
         {
-            float r = pixels[indexSrc++];
-            float g = pixels[indexSrc++];
-            float b = pixels[indexSrc++];
+            int r = pixels[indexSrc++];
+            int g = pixels[indexSrc++];
+            int b = pixels[indexSrc++];
             indexSrc++;
 
-            int ir = int(255.99 * r);
-            int ig = int(255.99 * g);
-            int ib = int(255.99 * b);
-
-            res[indexDst++] = ir;
-            res[indexDst++] = ig;
-            res[indexDst++] = ib;
+            res[indexDst++] = r;
+            res[indexDst++] = g;
+            res[indexDst++] = b;
         }
     }
 
@@ -45,9 +41,9 @@ void Renderer::Render()
     uint8_t *result;
 
     scene.WritePixelCoord(2,2, glm::vec3(1.0, 0.0, 0.5));
-    float* obtainedImage = scene.GetImage();
+    uint8_t* obtainedImage = scene.GetImage();
 
-    result = FloatToUint8(obtainedImage, scene._imageWidth, scene._imageHeight);
+    result = GiveResult(obtainedImage, scene._imageWidth, scene._imageHeight);
 
     std::string outputPath = "outputs/" + scene._imageName;
     stbi_write_png(outputPath.c_str(), scene._imageWidth, scene._imageHeight, 3, result, scene._imageWidth *3);

@@ -11,7 +11,7 @@ class Renderer
 private:
 
     Scene scene;
-    uint8_t* FloatToUint8(float* pixels, int width, int height);
+    uint8_t* GiveResult(uint8_t* pixels, int width, int height);
 
 public:
     Renderer(const std::string& filepath);

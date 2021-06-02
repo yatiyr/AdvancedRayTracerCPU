@@ -25,10 +25,11 @@ Scene::Scene(const std::string& filepath)
     SceneReadMaterials(root, _materials);
     SceneReadVertexData(root, _vertexData);
     SceneReadTransformations(root, _translationMatrices, _rotationMatrices, _scalingMatrices);
-    SceneReadMeshes(root, _meshes, _vertexData, _rotationMatrices, _scalingMatrices, _translationMatrices);
-    SceneReadMeshInstances(root, _meshes, _meshInstances, _rotationMatrices, _scalingMatrices, _translationMatrices);
-    SceneReadSpheres(root, _spheres, _vertexData, _rotationMatrices, _scalingMatrices, _translationMatrices);
-    SceneReadTriangles(root, _triangles, _vertexData, _rotationMatrices, _scalingMatrices, _translationMatrices);
+    SceneReadTextures(root, _images, _textures, _backgroundTexture);
+    SceneReadMeshes(root, _meshes, _textures, _vertexData, _texCoordData, _rotationMatrices, _scalingMatrices, _translationMatrices, _compositeMatrices);
+    SceneReadMeshInstances(root, _meshes, _textures, _meshInstances, _rotationMatrices, _scalingMatrices, _translationMatrices, _compositeMatrices);
+    SceneReadSpheres(root, _spheres, _textures, _vertexData, _rotationMatrices, _scalingMatrices, _translationMatrices, _compositeMatrices);
+    SceneReadTriangles(root, _triangles, _textures, _vertexData, _texCoordData, _rotationMatrices, _scalingMatrices, _translationMatrices, _compositeMatrices);
 
     ScenePopulateObjects(_objectPointerVector, _meshes, _meshInstances, _spheres, _triangles);
 
@@ -37,7 +38,7 @@ Scene::Scene(const std::string& filepath)
     _imageHeight = _activeCamera.imageResolution.y;
     _imageWidth  = _activeCamera.imageResolution.x;
     worksize = _imageHeight * _imageWidth;
-    _image = new float[_imageHeight*_imageWidth*4];
+    _image = new uint8_t[_imageHeight*_imageWidth*4];
 
     coreSize = std::thread::hardware_concurrency();
     count = 0;
@@ -118,7 +119,7 @@ void Scene::RenderThread()
     }
 }
 
-float* Scene::GetImage()
+uint8_t* Scene::GetImage()
 {
     Timer t;
     RenderThread();
@@ -370,7 +371,7 @@ glm::vec3 Scene::RayTrace(const Ray& ray, bool backfaceCulling)
         return pixel;
     }
 
-    return glm::clamp(_backgroundColor, glm::vec3(0.0f), glm::vec3(1.0f));
+    return glm::clamp(_backgroundColor, glm::vec3(0.0f), glm::vec3(255.0f));
 
 }
 
@@ -394,7 +395,7 @@ glm::vec3 Scene::TraceAndFilter(std::vector<RayWithWeigth> rwwVector)
     result.y = weightedSum.y / totalWeight.y;
     result.z = weightedSum.z / totalWeight.z;
 
-    return glm::clamp(result, glm::vec3(0.f), glm::vec3(1.0f));
+    return glm::clamp(result, glm::vec3(0.f), glm::vec3(255.0f));
     
 }
 

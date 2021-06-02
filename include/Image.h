@@ -25,9 +25,9 @@ public:
         int indexX = std::clamp(j, 0, height - 1) * width * channels;
         int indexY = std::clamp(i ,0, width - 1) * channels;
 
-        float r = (int) pixels[indexX + indexY]     / 255.f;
-        float g = (int) pixels[indexX + indexY + 1] / 255.f;
-        float b = (int) pixels[indexX + indexY + 2] / 255.f;
+        float r = (int) pixels[indexX + indexY];
+        float g = (int) pixels[indexX + indexY + 1];
+        float b = (int) pixels[indexX + indexY + 2];
 
         return glm::vec3(r,g,b);        
     }

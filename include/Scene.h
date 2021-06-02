@@ -41,7 +41,7 @@ class Scene
 {
 private:
 
-    Texture *_backgroundTexture;
+    Texture* _backgroundTexture;
 
     std::vector<Texture*> _textures;
     std::vector<Image*>  _images;
@@ -61,6 +61,7 @@ private:
     std::vector<glm::mat4> _translationMatrices;
     std::vector<glm::mat4> _rotationMatrices;
     std::vector<glm::mat4> _scalingMatrices;
+    std::vector<glm::mat4> _compositeMatrices;
 
     tinyxml2::XMLNode* inputRoot;
 
@@ -103,7 +104,7 @@ private:
 
     Camera _activeCamera; 
     std::vector<std::string> imageNames;
-    float* _image;
+    uint8_t* _image;
 
     Ray ComputePrimaryRay(int i, int j);
     std::vector<RayWithWeigth> ComputePrimaryRays(int i, int j);
@@ -150,7 +151,7 @@ public:
 
     glm::vec2 GiveCoords(int index, int width);
 
-    float* GetImage();
+    uint8_t* GetImage();
     void WritePixelCoord(int i, int j, const glm::vec3& color);
 };
 

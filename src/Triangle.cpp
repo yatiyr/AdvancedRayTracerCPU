@@ -99,12 +99,24 @@ bool Triangle::Intersect(const Ray& ray, IntersectionReport& report, float tmin,
     
 	if((beta + gamma <= 1 + intersectionTestEpsilon) && (beta >= -intersectionTestEpsilon) && (gamma >= -intersectionTestEpsilon) && t>tmin && t<tmax)
 	{
+
+		float alpha = 1 - (beta + gamma);
+
         report.d            = t;
 		report.intersection = ray.origin + t*ray.direction;
 
+		report.texCoordA = texCoordA;
+		report.texCoordB = texCoordB;
+		report.texCoordC = texCoordC;
+
+		report.coordA = a;
+		report.coordB = b;
+		report.coordC = c;
+		report.texCoord = alpha*texCoordA + beta*texCoordB + gamma*texCoordC;
+
+
 		if(softShadingFlag)
 		{
-			float alpha = 1 - (beta + gamma);
 			glm::vec3 normal = glm::normalize(alpha*aNormal + beta*bNormal + gamma*cNormal);
 			report.normal = transformationMatrixInverseTransposed * glm::vec4(this->normal, 0.0f);
 			report.normal = glm::normalize(report.normal);

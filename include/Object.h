@@ -20,7 +20,6 @@ public:
     Texture *specularMap;
     Texture *normalMap;
     Texture *bumpMap;
-    Texture *replaceAllMap;
     Texture *emissionMap;
     Texture *roughnessMap;
 
