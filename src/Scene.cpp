@@ -24,8 +24,9 @@ Scene::Scene(const std::string& filepath)
     SceneReadLights(root, _pointLights, _areaLights, _ambientLight);
     SceneReadMaterials(root, _materials);
     SceneReadVertexData(root, _vertexData);
+    SceneReadTexCoordData(root, _texCoordData);
     SceneReadTransformations(root, _translationMatrices, _rotationMatrices, _scalingMatrices);
-    SceneReadTextures(root, _images, _textures, _backgroundTexture);
+    SceneReadTextures(root, _images, _textures, _backgroundTextureIndex);
     SceneReadMeshes(root, _meshes, _textures, _vertexData, _texCoordData, _rotationMatrices, _scalingMatrices, _translationMatrices, _compositeMatrices);
     SceneReadMeshInstances(root, _meshes, _textures, _meshInstances, _rotationMatrices, _scalingMatrices, _translationMatrices, _compositeMatrices);
     SceneReadSpheres(root, _spheres, _textures, _vertexData, _rotationMatrices, _scalingMatrices, _translationMatrices, _compositeMatrices);
@@ -72,8 +73,8 @@ glm::vec2 Scene::GiveCoords(int index, int width)
     int i = index/width;
     int j = index%width;
 
-    result.x = i;
-    result.y = j;
+    result.x = j;
+    result.y = i;
 
     return result;
 }
@@ -96,7 +97,7 @@ void Scene::RenderThread()
                     glm::vec2 coords = GiveCoords(index, _imageWidth);
                     
                     std::vector<RayWithWeigth> rwwVector = ComputePrimaryRays(coords.x, coords.y);
-                    glm::vec3 filteredColor = TraceAndFilter(rwwVector);
+                    glm::vec3 filteredColor = TraceAndFilter(rwwVector, coords.x, coords.y);
 
                     //Ray pR = ComputePrimaryRay(coords.x, coords.y);
                     //glm::vec3 pixel = RayTrace(pR);
@@ -142,10 +143,10 @@ void Scene::ClearImage()
 
 void Scene::WritePixelCoord(int i, int j, const glm::vec3& color)
 {
-    _image[j * 4 + (_imageWidth * i *4)]     = color.x;
-    _image[j * 4 + (_imageWidth * i *4) + 1] = color.y;
-    _image[j * 4 + (_imageWidth * i *4) + 2] = color.z;
-    _image[j * 4 + (_imageWidth * i *4) + 3] = 1.0f;
+    _image[i * 4 + (_imageWidth * j *4)]     = color.x;
+    _image[i * 4 + (_imageWidth * j *4) + 1] = color.y;
+    _image[i * 4 + (_imageWidth * j *4) + 2] = color.z;
+    _image[i * 4 + (_imageWidth * j *4) + 3] = 1.0f;
 }
 
 
@@ -190,8 +191,8 @@ std::vector<RayWithWeigth> Scene::ComputePrimaryRays(int i, int j)
                 offsetY = 0.5f;
             }
 
-            float su = (j + offsetX) * (_activeCamera.nearPlane.y - _activeCamera.nearPlane.x) / _activeCamera.imageResolution.x;
-            float sv = (i + offsetY) * (_activeCamera.nearPlane.w -  _activeCamera.nearPlane.z) / _activeCamera.imageResolution.y;
+            float su = (i + offsetX) * (_activeCamera.nearPlane.y - _activeCamera.nearPlane.x) / _activeCamera.imageResolution.x;
+            float sv = (j + offsetY) * (_activeCamera.nearPlane.w -  _activeCamera.nearPlane.z) / _activeCamera.imageResolution.y;
 
             glm::vec3 direction = glm::normalize((q + su * _activeCamera.v - sv * _activeCamera.up) - origin);
             Ray fR(origin, direction);
@@ -282,17 +283,60 @@ glm::vec3 Scene::ComputeDiffuseSpecular(const IntersectionReport& report, const 
 
     for(size_t i=0; i<_pointLights.size(); i++)
     {
-        if(ShadowRayIntersection(0, 2000, _intersectionTestEpsilon, _shadowRayEpsilon, _pointLights[i].position, report, true, ray.time))
+        if(ShadowRayIntersection(0.01, 2000, _intersectionTestEpsilon, _shadowRayEpsilon, _pointLights[i].position, report, true, ray.time))
         {
             continue;
         }
         else
         {
+            glm::vec3 diffuseReflectance = _materials[report.materialId].diffuseReflectance;
+            glm::vec3 specularReflectance = _materials[report.materialId].specularReflectance;
+
+            if(report.diffuseActive)
+            {
+                if(report.replaceAll)
+                {
+                    return report.texDiffuseReflectance;
+                }
+                else if(report.texDiffuseKdMode == 1)
+                {
+                    diffuseReflectance = report.texDiffuseReflectance;
+                }
+                else if(report.texDiffuseKdMode == 2)
+                {
+                    diffuseReflectance = (diffuseReflectance + report.texDiffuseReflectance);
+                    diffuseReflectance.x /= 2;
+                    diffuseReflectance.y /= 2;
+                    diffuseReflectance.z /= 2;
+                }
+            }
+
+            if(report.specularActive)
+            {
+                if(report.texSpecularKdMode == 1)
+                {
+                    specularReflectance = report.texSpecularReflectance;
+                }
+                else if(report.texSpecularKdMode == 2)
+                {
+                    specularReflectance = (specularReflectance + report.texSpecularReflectance);
+                    specularReflectance.x /= 2;
+                    specularReflectance.y /= 2;
+                    specularReflectance.z /= 2;
+                }
+            }
+
+            // Add emisssion later
+            if(report.emissionActive)
+            {
+
+            }
+
             float lightDistance = glm::length(_pointLights[i].position - report.intersection);
             glm::vec3 wi = glm::normalize(_pointLights[i].position - report.intersection);
 
             // Diffuse Calculation
-            result += _materials[report.materialId].diffuseReflectance *
+            result += diffuseReflectance *
                     std::max(0.0f, glm::dot(wi, report.normal)) *
                     (_pointLights[i].intensity / (lightDistance * lightDistance));
 
@@ -300,7 +344,7 @@ glm::vec3 Scene::ComputeDiffuseSpecular(const IntersectionReport& report, const 
             // Specular Calculation
             glm::vec3 h  = glm::normalize(wi - ray.direction);
 
-            result += _materials[report.materialId].specularReflectance *
+            result += specularReflectance *
                     std::pow(std::max(0.0f, glm::dot(report.normal, h)), _materials[report.materialId].phongExponent) *
                     (_pointLights[i].intensity / (lightDistance * lightDistance));
         }
@@ -358,24 +402,28 @@ glm::vec3 Scene::ComputeSpecularComponent(const IntersectionReport& report, cons
 }
 
 
-glm::vec3 Scene::RayTrace(const Ray& ray, bool backfaceCulling)
+RayTraceResult Scene::RayTrace(const Ray& ray, bool backfaceCulling)
 {
 
+    RayTraceResult result;
     IntersectionReport r;
     if(TestWorldIntersection(ray, r, 0, 2000, _intersectionTestEpsilon, backfaceCulling))
     {
         glm::vec3 pixel(0.0);        
         pixel += ComputeAmbientComponent(r) + ComputeDiffuseSpecular(r, ray) + RecursiveTrace(ray, r, 0, false);
         
-
-        return pixel;
+        result.resultColor = pixel;
+        result.hit = true;
+        return result;
     }
 
-    return glm::clamp(_backgroundColor, glm::vec3(0.0f), glm::vec3(255.0f));
+    result.resultColor = glm::clamp(_backgroundColor, glm::vec3(0.0f), glm::vec3(255.0f));
+    result.hit = false;
+    return result;
 
 }
 
-glm::vec3 Scene::TraceAndFilter(std::vector<RayWithWeigth> rwwVector)
+glm::vec3 Scene::TraceAndFilter(std::vector<RayWithWeigth> rwwVector, int x, int y)
 {
     float stdDev = 1.f/6.f;
     glm::vec3 result;
@@ -385,10 +433,33 @@ glm::vec3 Scene::TraceAndFilter(std::vector<RayWithWeigth> rwwVector)
 
     for(size_t i=0; i<rwwVector.size(); i++)
     {
-        glm::vec3 rtResult = RayTrace(rwwVector[i].r, true);
 
-        weightedSum += GaussianWeight(rwwVector[i].distX, rwwVector[i].distY, stdDev) * rtResult;
-        totalWeight += GaussianWeight(rwwVector[i].distX, rwwVector[i].distY, stdDev);
+        RayTraceResult rtResult = RayTrace(rwwVector[i].r, true);
+
+        if(rtResult.hit)
+        {
+            weightedSum += GaussianWeight(rwwVector[i].distX, rwwVector[i].distY, stdDev) * rtResult.resultColor;
+            totalWeight += GaussianWeight(rwwVector[i].distX, rwwVector[i].distY, stdDev);
+        }
+        else
+        {
+            if(_backgroundTextureIndex != -1)
+            {
+                float u = (float)x / (float)_imageWidth;
+                float v = (float)y / (float)_imageHeight;
+
+                glm::vec3 texColor = _textures[_backgroundTextureIndex]->Fetch(u, v);
+                weightedSum += GaussianWeight(rwwVector[i].distX, rwwVector[i].distY, stdDev) * texColor;
+                totalWeight += GaussianWeight(rwwVector[i].distX, rwwVector[i].distY, stdDev);
+            }
+            else
+            {            
+                weightedSum += GaussianWeight(rwwVector[i].distX, rwwVector[i].distY, stdDev) * rtResult.resultColor;
+                totalWeight += GaussianWeight(rwwVector[i].distX, rwwVector[i].distY, stdDev);                
+            }
+            
+        }
+
     }
 
     result.x = weightedSum.x / totalWeight.x;

@@ -134,6 +134,10 @@ struct IntersectionReport
     glm::vec2 texCoordB;
     glm::vec2 texCoordC;
 
+    bool diffuseActive = false;
+    bool specularActive = false;
+    bool emissionActive = false;
+
 };
 
 

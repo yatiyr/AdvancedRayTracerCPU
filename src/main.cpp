@@ -6,11 +6,12 @@
 int main(int argc, char** argv)
 {
 
-    //Renderer RnDr(argv[1]);
+    Renderer RnDr(argv[1]);
 
 
     //stbi_set_flip_vertically_on_load(false);
 
+/*
     PerlinNoiseGenerator generator;
     float xa = generator.GenerateNoise(glm::vec3(423.23, 180.12, -12.123));
     
@@ -24,9 +25,9 @@ int main(int argc, char** argv)
     glm::vec3 x = tex1.Fetch(-0.1,-0.1);
     glm::vec3 y = tex2.Fetch(0.1,0.1);
     glm::vec3 z = tex1.Fetch(1,0);
-    glm::vec3 w = tex2.Fetch(1,0); 
+    glm::vec3 w = tex2.Fetch(1,0); */
 
-  /*
+  
     try
     {    
       RnDr.Render();
@@ -35,7 +36,7 @@ int main(int argc, char** argv)
     {
         std::cerr << e.what() << '\n';
     }
-  */
+  
 
   return 0;
 }

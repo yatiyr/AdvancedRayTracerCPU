@@ -16,12 +16,12 @@ public:
 
     glm::vec3 translationVector;
 
-    Texture *diffuseMap;
-    Texture *specularMap;
-    Texture *normalMap;
-    Texture *bumpMap;
-    Texture *emissionMap;
-    Texture *roughnessMap;
+    Texture *diffuseMap = nullptr;
+    Texture *specularMap = nullptr;
+    Texture *normalMap = nullptr;
+    Texture *bumpMap = nullptr;
+    Texture *emissionMap = nullptr;
+    Texture *roughnessMap = nullptr;
 
     virtual bool Intersect(const Ray& ray, IntersectionReport& report, float tmin, float tmax, float intersectionEpsilon, bool backfaceCulling) = 0;
 
@@ -37,6 +37,16 @@ public:
         return glm::inverse(glm::translate(glm::mat4(1.0f),currentTranslation));
 
     }
+
+    float ColorDistance(glm::vec3 c1, glm::vec3 c2)
+    {
+        long rmean = ((long)c1.x + (long)c2.x) / 2;
+        long r = ((long)c1.x - (long)c2.x);
+        long g = (long)c1.y - (long)c2.y;
+        long b = (long)c1.z - (long)c2.z;
+        return std::sqrt((((512+rmean)*r*r)>>8) + 4*g*g + (((767-rmean)*b*b)>>8))/5;
+    }
+
 
 };
 

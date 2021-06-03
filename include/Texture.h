@@ -130,7 +130,7 @@ public:
 
     glm::vec3 Fetch(float u, float v)
     {
-
+        glm::vec3 result(0.0,0.0,0.0);
         if(type == TextureType::IMAGE)
         {
             if(u < 0 || u > 1)
@@ -146,7 +146,7 @@ public:
                 int iI = std::round(i);
                 int iJ = std::round(j);
 
-                glm::vec3 result = image->get(iI, iJ);
+                result = image->get(iI, iJ);
 
                 result.x /= normalizer;
                 result.y /= normalizer;
@@ -163,7 +163,7 @@ public:
                 float a = i - iI;
                 float b = j - iJ;           
 
-                glm::vec3 result = (1-a) * (1-b) * image->get(iI, iJ) +
+                result           = (1-a) * (1-b) * image->get(iI, iJ) +
                                    (1-a) *   b   * image->get(iI, iJ + 1) +
                                     a    * (1-b) * image->get(iI + 1, iJ) +
                                     a    *   b   * image->get(iI + 1, iJ + 1);
@@ -175,6 +175,8 @@ public:
                 return result;
             }
         }
+
+        return result;
 
     }
 };

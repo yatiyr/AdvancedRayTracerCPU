@@ -37,11 +37,17 @@ struct WorkGroup
     int end;
 };
 
+struct RayTraceResult
+{
+    bool hit;
+    glm::vec3 resultColor;
+};
+
 class Scene
 {
 private:
 
-    Texture* _backgroundTexture;
+    int _backgroundTextureIndex = -1;
 
     std::vector<Texture*> _textures;
     std::vector<Image*>  _images;
@@ -134,10 +140,10 @@ private:
     glm::vec3 ComputeDiffuseSpecular(const IntersectionReport& report, const Ray& ray);
     glm::vec3 ComputeSpecularComponent(const IntersectionReport& report, const PointLight& light, const Ray& ray);
 
-    glm::vec3 RayTrace(const Ray& ray, bool backfaceCulling);
+    RayTraceResult RayTrace(const Ray& ray, bool backfaceCulling);
     glm::vec3 RecursiveTrace(const Ray& ray, const IntersectionReport& iR, int bounce, bool backfaceCulling);
 
-    glm::vec3 TraceAndFilter(std::vector<RayWithWeigth> rwwVector);
+    glm::vec3 TraceAndFilter(std::vector<RayWithWeigth> rwwVector, int x, int y);
 
     void RenderThread();
 

@@ -60,6 +60,8 @@ bool Mesh::Intersect(const Ray& ray, IntersectionReport& report, float tmin, flo
             {
                 // Will be implemented
             } 
+
+            report.diffuseActive = true;
         }
         
         if(this->specularMap)
@@ -92,7 +94,9 @@ bool Mesh::Intersect(const Ray& ray, IntersectionReport& report, float tmin, flo
             else if(this->diffuseMap->type == TextureType::CHECKERBOARD)
             {
                 // Will be implemented
-            } 
+            }
+
+            report.specularActive = true;
         }
 
         if(this->normalMap)
@@ -117,16 +121,97 @@ bool Mesh::Intersect(const Ray& ray, IntersectionReport& report, float tmin, flo
 
             glm::mat2x3 TB = glm::transpose(A_Inverse * E);
             glm::mat3 TBN(TB[0], TB[1], report.normal);
-            report.normal = TBN * report.normal;
+            report.normal = TBN * fetchedNormal;
         }
         else if(this->bumpMap)
         {
+            if(this->bumpMap->type != TextureType::PERLIN)
+            {
+                glm::vec3 e1 = report.coordB - report.coordA;
+                glm::vec3 e2 = report.coordC - report.coordA;
 
+                glm::mat2 A_Inverse = glm::inverse(glm::mat2(glm::vec2(report.texCoordB.x - report.texCoordA.x, report.texCoordC.x - report.texCoordA.x),
+                                                            glm::vec2(report.texCoordB.y - report.texCoordA.y, report.texCoordC.y - report.texCoordA.y)));
+
+                glm::mat3x2 E(glm::vec2(e1.x, e2.x),
+                            glm::vec2(e1.y, e2.y),
+                            glm::vec2(e1.z, e2.z));
+
+                glm::mat2x3 TB = glm::transpose(A_Inverse * E);
+
+                float u = report.texCoord.x;
+                float v = report.texCoord.y;
+
+                if(u < 0 || u > 1)
+                    u -= std::floor(u);
+                if(v < 0 || v > 1)
+                    v -= std::floor(v);
+
+
+                int i = u * this->bumpMap->image->width;
+                int j = v * this->bumpMap->image->height;
+                glm::vec3 image = this->bumpMap->image->get(i,j);
+                glm::vec3 imageForwardU = this->bumpMap->image->get(i+1, j);
+                glm::vec3 imageForwardV = this->bumpMap->image->get(i, j+1);
+
+                float avImage = (image.x + image.y + image.z) / 3;
+                float avImageForwardU = (imageForwardU.x + imageForwardU.y + imageForwardU.z) / 3;
+                float avImageForwardV = (imageForwardV.x + imageForwardV.y + imageForwardV.z) / 3;
+
+                avImage /= 50;
+                avImageForwardU /= 50;
+                avImageForwardV /= 50;
+                    
+                float du = avImageForwardU - avImage;//glm::length(this->bumpMap->image->get(i+1,j) - this->bumpMap->image->get(i,j));
+                float dv = avImageForwardV - avImage;//glm::length(this->bumpMap->image->get(i,j+1) - this->bumpMap->image->get(i,j));
+
+                glm::vec3 tangentPlaneVec = du * TB[0] + dv * TB[1];
+
+                glm::vec3 newNormal = report.normal - this->bumpMap->bumpFactor*(tangentPlaneVec);
+                newNormal = glm::normalize(newNormal);
+                report.normal = newNormal;
+
+            }
+            else
+            {
+                // perlin gradient
+                float epsilon = 0.001;
+                float xDiff = this->bumpMap->FetchPerlin(glm::vec3(report.intersection.x + epsilon, report.intersection.y, report.intersection.z));
+                float yDiff = this->bumpMap->FetchPerlin(glm::vec3(report.intersection.x, report.intersection.y + epsilon, report.intersection.z));
+                float zDiff = this->bumpMap->FetchPerlin(glm::vec3(report.intersection.x, report.intersection.y, report.intersection.z + epsilon));
+                float perlinNoise = this->bumpMap->FetchPerlin(report.intersection);
+
+                // Veiny appearence
+                if(this->bumpMap->noiseConversion == NoiseConversionType::ABSVAL)
+                {
+                    xDiff = std::fabs(xDiff);
+                    yDiff = std::fabs(yDiff);
+                    zDiff = std::fabs(zDiff);
+                    perlinNoise = std::fabs(perlinNoise);
+                }
+                // Patch appearence
+                else if(this->bumpMap->noiseConversion == NoiseConversionType::LINEAR)
+                {
+                    xDiff = (xDiff + 1)/2;
+                    yDiff = (yDiff + 1)/2;
+                    zDiff = (zDiff + 1)/2;
+                    perlinNoise = (perlinNoise + 1)/2;
+                }
+
+                glm::vec3 perlinGradient = glm::vec3((xDiff - perlinNoise)/epsilon,
+                                                     (yDiff - perlinNoise)/epsilon,
+                                                     (zDiff - perlinNoise)/epsilon);
+
+                glm::vec3 projectedGradient = perlinGradient - glm::dot(perlinGradient, report.normal) * report.normal;
+                glm::vec3 newNormal = report.normal - this->bumpMap->bumpFactor * (projectedGradient);
+                newNormal = glm::normalize(newNormal);
+                report.normal = newNormal;
+            }
         }
 
         if(this->emissionMap)
         {
-
+            report.emissionActive = true;
         }
 
         if(this->roughnessMap)

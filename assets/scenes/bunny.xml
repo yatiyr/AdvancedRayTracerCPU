@@ -19,7 +19,7 @@
         <AmbientLight>81 81 81</AmbientLight>
         <PointLight id="1">
             <Position>2 2 2</Position>
-            <Intensity>10 10 10</Intensity>
+            <Intensity>5000 5000 5000</Intensity>
         </PointLight>
     </Lights>
 
@@ -2539,7 +2539,7 @@
     </VertexData>
 
     <Objects>
-        <Mesh id="1">
+        <Mesh id="1" shadingMode="smooth">
             <Material>1</Material>
             <Faces>
                 1069 1647 1578

@@ -53,7 +53,7 @@ inline void SceneReadConstants(tinyxml2::XMLNode* root, glm::vec3& _backgroundCo
     }
     else
     {
-        stream << "0.0001" << std::endl;
+        stream << "0.01" << std::endl;
     }
     stream >> _shadowRayEpsilon;
 
@@ -64,7 +64,7 @@ inline void SceneReadConstants(tinyxml2::XMLNode* root, glm::vec3& _backgroundCo
     }
     else
     {
-        stream << "0.0000001" << std::endl;
+        stream << "0.0001" << std::endl;
     }
     stream >> _intersectionTestEpsilon;
 
@@ -120,7 +120,7 @@ inline void SceneReadCameras(tinyxml2::XMLNode* root, std::vector<Camera>& _came
 
             float l, r, b, t;
 
-            t = std::tan(fovY/2)*camera.nearDistance;
+            t = std::tan((fovY*M_PI)/(2*180))*camera.nearDistance;
             r = (camera.imageResolution.x / camera.imageResolution.y) * t;
             l = -r;
             b = -t;
@@ -399,10 +399,10 @@ inline void SceneReadImages(tinyxml2::XMLNode* imagesNode, std::vector<Image*>& 
     {
         std::string filename;
         
-        stream << element->GetText();
+        stream << element->GetText() << std::endl;
         stream >> filename;
         
-        std::string path = std::string(ROOT_DIR) + filename;
+        std::string path = std::string(ROOT_DIR) + "assets/scenes/"+ filename;
         Image* newImage = new Image(path.c_str());
         _images.push_back(newImage);
 
@@ -410,7 +410,7 @@ inline void SceneReadImages(tinyxml2::XMLNode* imagesNode, std::vector<Image*>& 
     }
 }
 
-inline void SceneReadTextureMaps(tinyxml2::XMLNode* texturesNode, std::vector<Image*>& _images, std::vector<Texture*>& _textures, Texture* _backgroundTexture)
+inline void SceneReadTextureMaps(tinyxml2::XMLNode* texturesNode, std::vector<Image*>& _images, std::vector<Texture*>& _textures, int& _backgroundTextureIndex)
 {
     auto element = texturesNode->FirstChildElement("TextureMap");
 
@@ -535,7 +535,7 @@ inline void SceneReadTextureMaps(tinyxml2::XMLNode* texturesNode, std::vector<Im
                 tex->bumpFactor = factor;
             }
             else
-                tex->bumpFactor = 0.1;
+                tex->bumpFactor = 1;
 
 
             child = element->FirstChildElement("BlackColor");
@@ -580,24 +580,28 @@ inline void SceneReadTextureMaps(tinyxml2::XMLNode* texturesNode, std::vector<Im
             
             _textures.push_back(tex);
 
-            if(tex->decalMode = DecalMode::REPLACE_BACKGROUND)
-                _backgroundTexture = tex;
+            if(tex->decalMode == DecalMode::REPLACE_BACKGROUND)
+                _backgroundTextureIndex = _textures.size() - 1;
         }
 
         element = element->NextSiblingElement("TextureMap");
     }
 }
 
-inline void SceneReadTextures(tinyxml2::XMLNode* root, std::vector<Image*>& _images, std::vector<Texture*>& _textures, Texture* _backgroundTexture)
+inline void SceneReadTextures(tinyxml2::XMLNode* root, std::vector<Image*>& _images, std::vector<Texture*>& _textures, int& _backgroundTextureIndex)
 {
 
     auto textures = root->FirstChildElement("Textures");
-    auto images = textures->FirstChildElement("Images");
 
-    if(images)
-        SceneReadImages(images, _images);
     if(textures)
-        SceneReadTextureMaps(textures, _images, _textures, _backgroundTexture);
+    {
+        auto images = textures->FirstChildElement("Images");
+        if(images)
+        {
+            SceneReadImages(images, _images);
+        }
+        SceneReadTextureMaps(textures, _images, _textures, _backgroundTextureIndex);        
+    }
 
 }
 
@@ -632,7 +636,7 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
 
         if(element->Attribute("shadingMode"))
         {
-            if(std::strcmp(element->Attribute("shadingMode"), "soft"))
+            if(std::strcmp(element->Attribute("shadingMode"), "smooth") == 0)
                 softShading = true;
         }
 
@@ -815,9 +819,12 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
 
                 Triangle tri(a, b, c, normals[indexVector[i].a + vertexOffset - 1], normals[indexVector[i].b + vertexOffset - 1], normals[indexVector[i].c + vertexOffset - 1]);
 
-                tri.texCoordA = _texCoordData[indexVector[i].a + textureOffset - 1];
-                tri.texCoordB = _texCoordData[indexVector[i].b + textureOffset - 1];
-                tri.texCoordC = _texCoordData[indexVector[i].c + textureOffset - 1];
+                if(_texCoordData.size() > indexVector[i].a + textureOffset - 1)
+                    tri.texCoordA = _texCoordData[indexVector[i].a + textureOffset - 1];
+                if(_texCoordData.size() > indexVector[i].b + textureOffset - 1)
+                    tri.texCoordB = _texCoordData[indexVector[i].b + textureOffset - 1];
+                if(_texCoordData.size() > indexVector[i].c + textureOffset - 1)
+                    tri.texCoordC = _texCoordData[indexVector[i].c + textureOffset - 1];
 
                 triangleList.push_back(tri);
             }
@@ -1201,9 +1208,12 @@ inline void SceneReadTriangles(tinyxml2::XMLNode* root, std::vector<Triangle>& _
         glm::vec3 c = _vertexData[indices.c + vertexOffset - 1];
 
         Triangle tri(a, b, c);
-        tri.texCoordA = _texCoordData[indices.a + textureOffset - 1];
-        tri.texCoordB = _texCoordData[indices.b + textureOffset - 1];
-        tri.texCoordC = _texCoordData[indices.c + textureOffset - 1];
+        if(_texCoordData.size() > indices.a + textureOffset - 1)
+            tri.texCoordA = _texCoordData[indices.a + textureOffset - 1];
+        if(_texCoordData.size() > indices.b + textureOffset - 1)
+            tri.texCoordB = _texCoordData[indices.b + textureOffset - 1];
+        if(_texCoordData.size() > indices.c + textureOffset - 1)
+            tri.texCoordC = _texCoordData[indices.c + textureOffset - 1];
 
         tri.materialId = materialId - 1;
 
