@@ -127,8 +127,8 @@ bool Mesh::Intersect(const Ray& ray, IntersectionReport& report, float tmin, flo
         {
             if(this->bumpMap->type != TextureType::PERLIN)
             {
-                glm::vec3 e1 = report.coordB - report.coordA;
-                glm::vec3 e2 = report.coordC - report.coordA;
+                glm::vec3 e1 = glm::normalize(report.coordB - report.coordA);
+                glm::vec3 e2 = glm::normalize(report.coordC - report.coordA);
 
                 glm::mat2 A_Inverse = glm::inverse(glm::mat2(glm::vec2(report.texCoordB.x - report.texCoordA.x, report.texCoordC.x - report.texCoordA.x),
                                                             glm::vec2(report.texCoordB.y - report.texCoordA.y, report.texCoordC.y - report.texCoordA.y)));
@@ -158,9 +158,6 @@ bool Mesh::Intersect(const Ray& ray, IntersectionReport& report, float tmin, flo
                 float avImageForwardU = (imageForwardU.x + imageForwardU.y + imageForwardU.z) / 3;
                 float avImageForwardV = (imageForwardV.x + imageForwardV.y + imageForwardV.z) / 3;
 
-                avImage /= 50;
-                avImageForwardU /= 50;
-                avImageForwardV /= 50;
                     
                 float du = avImageForwardU - avImage;//glm::length(this->bumpMap->image->get(i+1,j) - this->bumpMap->image->get(i,j));
                 float dv = avImageForwardV - avImage;//glm::length(this->bumpMap->image->get(i,j+1) - this->bumpMap->image->get(i,j));
