@@ -25,7 +25,7 @@ Scene::Scene(const std::string& filepath)
     SceneReadMaterials(root, _materials);
     SceneReadVertexData(root, _vertexData);
     SceneReadTexCoordData(root, _texCoordData);
-    SceneReadTransformations(root, _translationMatrices, _rotationMatrices, _scalingMatrices);
+    SceneReadTransformations(root, _translationMatrices, _rotationMatrices, _scalingMatrices, _compositeMatrices);
     SceneReadTextures(root, _images, _textures, _backgroundTextureIndex);
     SceneReadMeshes(root, _meshes, _textures, _vertexData, _texCoordData, _rotationMatrices, _scalingMatrices, _translationMatrices, _compositeMatrices);
     SceneReadMeshInstances(root, _meshes, _textures, _meshInstances, _rotationMatrices, _scalingMatrices, _translationMatrices, _compositeMatrices);

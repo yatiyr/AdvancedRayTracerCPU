@@ -6,7 +6,7 @@
 int main(int argc, char** argv)
 {
 
-    Renderer RnDr(argv[1]);
+    Renderer RnDr("assets/scenes/veachAjar.xml");
 
 
     //stbi_set_flip_vertically_on_load(false);

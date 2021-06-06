@@ -380,7 +380,8 @@ inline void SceneReadVertexData(tinyxml2::XMLNode* root, std::vector<glm::vec3>&
 {
     std::stringstream stream;
     auto element = root->FirstChildElement("VertexData");
-    stream << element->GetText() << std::endl;
+    if(element)
+        stream << element->GetText() << std::endl;
     glm::vec3 vertex;
     while(!(stream >> vertex.x).eof())
     {
@@ -655,52 +656,87 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
 
         if(child->Attribute("plyFile"))
         {
+            bool normalsExist = false;
+            bool textureCoordsExist = false;
+
             const char* localPath = child->Attribute("plyFile");
             std::string path = std::string(ROOT_DIR) + "assets/scenes/" + std::string(localPath);
 
             happly::PLYData plyIn(path);
 
             std::vector<std::array<double, 3>> vPos = plyIn.getVertexPositions();
+            std::vector<std::string> xasd = plyIn.getElement("vertex").getPropertyNames();
+
+            std::vector<float> nx,ny,nz,u,v;
+
+            if(plyIn.getElement("vertex").hasProperty("nx") && plyIn.getElement("vertex").hasProperty("ny") && plyIn.getElement("vertex").hasProperty("nz"))
+            {
+                nx = plyIn.getElement("vertex").getProperty<float>(std::string("nx"));
+                ny = plyIn.getElement("vertex").getProperty<float>(std::string("ny"));
+                nz = plyIn.getElement("vertex").getProperty<float>(std::string("nz"));
+                normalsExist = true;
+            }
+            else
+            {
+                normalsExist = false;
+            }
+
+            if(plyIn.getElement("vertex").hasProperty("u") && plyIn.getElement("vertex").hasProperty("v"))
+            {
+                u = plyIn.getElement("vertex").getProperty<float>(std::string("u"));
+                v = plyIn.getElement("vertex").getProperty<float>(std::string("v"));
+                textureCoordsExist = true;
+            }
+            else
+            {
+                textureCoordsExist = false;
+            }
+            
+            
             std::vector<std::vector<size_t>> fInd = plyIn.getFaceIndices<size_t>();
 
-            for(size_t i=0; i<vPos.size(); i++)
+
+            if(!normalsExist)
             {
-                normals.push_back(glm::vec3(0.0));
-                neighborCount.push_back(0);
-            }
+                for(size_t i=0; i<vPos.size(); i++)
+                {
+                    normals.push_back(glm::vec3(0.0));
+                    neighborCount.push_back(0);
+                }
 
-            for(size_t i=0; i<fInd.size(); i++)
-            {
-                glm::vec3 a,b,c;
+                for(size_t i=0; i<fInd.size(); i++)
+                {
+                    glm::vec3 a,b,c;
 
-                a.x = vPos[fInd[i][0]][0];
-                a.y = vPos[fInd[i][0]][1];
-                a.z = vPos[fInd[i][0]][2];
+                    a.x = vPos[fInd[i][0]][0];
+                    a.y = vPos[fInd[i][0]][1];
+                    a.z = vPos[fInd[i][0]][2];
 
-                b.x = vPos[fInd[i][1]][0];
-                b.y = vPos[fInd[i][1]][1];
-                b.z = vPos[fInd[i][1]][2];                                
+                    b.x = vPos[fInd[i][1]][0];
+                    b.y = vPos[fInd[i][1]][1];
+                    b.z = vPos[fInd[i][1]][2];                                
 
-                c.x = vPos[fInd[i][2]][0];
-                c.y = vPos[fInd[i][2]][1];
-                c.z = vPos[fInd[i][2]][2];
+                    c.x = vPos[fInd[i][2]][0];
+                    c.y = vPos[fInd[i][2]][1];
+                    c.z = vPos[fInd[i][2]][2];
 
-                glm::vec3 normal = glm::normalize(glm::cross((b-a), (c-a)));
+                    glm::vec3 normal = glm::normalize(glm::cross((b-a), (c-a)));
 
-                normals[fInd[i][0]] += normal;
-                neighborCount[fInd[i][0]] += 1;
+                    normals[fInd[i][0]] += normal;
+                    neighborCount[fInd[i][0]] += 1;
 
-                normals[fInd[i][1]] += normal;
-                neighborCount[fInd[i][1]] += 1;
+                    normals[fInd[i][1]] += normal;
+                    neighborCount[fInd[i][1]] += 1;
 
-                normals[fInd[i][2]] += normal;
-                neighborCount[fInd[i][2]] += 1;                                
+                    normals[fInd[i][2]] += normal;
+                    neighborCount[fInd[i][2]] += 1;                                
 
-            }
+                }
 
-            for(size_t i=0; i<normals.size(); i++)
-            {
-                normals[i] /= neighborCount[i];
+                for(size_t i=0; i<normals.size(); i++)
+                {
+                    normals[i] /= neighborCount[i];
+                }
             }
 
 
@@ -724,8 +760,33 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
                     c.y = vPos[fInd[i][2]][1];
                     c.z = vPos[fInd[i][2]][2];
 
-                    Triangle tri(a, b, c, normals[fInd[i][0]], normals[fInd[i][1]], normals[fInd[i][2]]);
-                    triangleList.push_back(tri);
+                    if(!normalsExist)
+                    {
+                        Triangle tri(a, b, c, normals[fInd[i][0]], normals[fInd[i][1]], normals[fInd[i][2]]);
+                        if(textureCoordsExist)
+                        {
+                            tri.texCoordA = glm::vec2(u[fInd[i][0]], v[fInd[i][0]]);
+                            tri.texCoordB = glm::vec2(u[fInd[i][1]], v[fInd[i][1]]);
+                            tri.texCoordC = glm::vec2(u[fInd[i][2]], v[fInd[i][2]]);                                                        
+                        }
+                        triangleList.push_back(tri);                        
+                    }
+                    else
+                    {
+                        Triangle tri(a, b, c, glm::vec3(nx[fInd[i][0]], ny[fInd[i][0]], nz[fInd[i][0]]),
+                                              glm::vec3(nx[fInd[i][1]], ny[fInd[i][1]], nz[fInd[i][1]]),
+                                              glm::vec3(nx[fInd[i][2]], ny[fInd[i][2]], nz[fInd[i][2]]));
+                        if(textureCoordsExist)
+                        {
+                            tri.texCoordA = glm::vec2(u[fInd[i][0]], v[fInd[i][0]]);
+                            tri.texCoordB = glm::vec2(u[fInd[i][1]], v[fInd[i][1]]);
+                            tri.texCoordC = glm::vec2(u[fInd[i][2]], v[fInd[i][2]]);                                                        
+                        }
+                        triangleList.push_back(tri);                        
+                    }
+
+                    
+
                 }
                 else if(fInd[i].size() == 4)
                 {
@@ -741,8 +802,30 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
                     c.y = vPos[fInd[i][2]][1];
                     c.z = vPos[fInd[i][2]][2];
 
-                    Triangle tri(a, b, c, normals[fInd[i][0]], normals[fInd[i][1]], normals[fInd[i][2]]);
-                    triangleList.push_back(tri);
+                    if(!normalsExist)
+                    {
+                        Triangle tri(a, b, c, normals[fInd[i][0]], normals[fInd[i][1]], normals[fInd[i][2]]);
+                        if(textureCoordsExist)
+                        {
+                            tri.texCoordA = glm::vec2(u[fInd[i][0]], v[fInd[i][0]]);
+                            tri.texCoordB = glm::vec2(u[fInd[i][1]], v[fInd[i][1]]);
+                            tri.texCoordC = glm::vec2(u[fInd[i][2]], v[fInd[i][2]]);                                                        
+                        }
+                        triangleList.push_back(tri);                        
+                    }
+                    else
+                    {
+                        Triangle tri(a, b, c, glm::vec3(nx[fInd[i][0]], ny[fInd[i][0]], nz[fInd[i][0]]),
+                                              glm::vec3(nx[fInd[i][1]], ny[fInd[i][1]], nz[fInd[i][1]]),
+                                              glm::vec3(nx[fInd[i][2]], ny[fInd[i][2]], nz[fInd[i][2]]));
+                        if(textureCoordsExist)
+                        {
+                            tri.texCoordA = glm::vec2(u[fInd[i][0]], v[fInd[i][0]]);
+                            tri.texCoordB = glm::vec2(u[fInd[i][1]], v[fInd[i][1]]);
+                            tri.texCoordC = glm::vec2(u[fInd[i][2]], v[fInd[i][2]]);                                                        
+                        }
+                        triangleList.push_back(tri);                        
+                    }                    
 
                     b.x = vPos[fInd[i][2]][0];
                     b.y = vPos[fInd[i][2]][1];
@@ -752,8 +835,30 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
                     c.y = vPos[fInd[i][3]][1];
                     c.z = vPos[fInd[i][3]][2];
 
-                    Triangle tri2(a, b, c, normals[fInd[i][0]], normals[fInd[i][2]], normals[fInd[i][3]]);
-                    triangleList.push_back(tri2);
+                    if(!normalsExist)
+                    {
+                        Triangle tri2(a, b, c, normals[fInd[i][0]], normals[fInd[i][2]], normals[fInd[i][3]]);
+                        if(textureCoordsExist)
+                        {
+                            tri2.texCoordA = glm::vec2(u[fInd[i][0]], v[fInd[i][0]]);
+                            tri2.texCoordB = glm::vec2(u[fInd[i][2]], v[fInd[i][2]]);
+                            tri2.texCoordC = glm::vec2(u[fInd[i][3]], v[fInd[i][3]]);                                                        
+                        }
+                        triangleList.push_back(tri2);                        
+                    }
+                    else
+                    {
+                        Triangle tri2(a, b, c, glm::vec3(nx[fInd[i][0]], ny[fInd[i][0]], nz[fInd[i][0]]),
+                                               glm::vec3(nx[fInd[i][2]], ny[fInd[i][2]], nz[fInd[i][2]]),
+                                               glm::vec3(nx[fInd[i][3]], ny[fInd[i][3]], nz[fInd[i][3]]));
+                        if(textureCoordsExist)
+                        {
+                            tri2.texCoordA = glm::vec2(u[fInd[i][0]], v[fInd[i][0]]);
+                            tri2.texCoordB = glm::vec2(u[fInd[i][2]], v[fInd[i][2]]);
+                            tri2.texCoordC = glm::vec2(u[fInd[i][3]], v[fInd[i][3]]);                                                        
+                        }
+                        triangleList.push_back(tri2);                        
+                    }
 
                 }              
                 
@@ -933,7 +1038,7 @@ inline void SceneReadMeshInstances(tinyxml2::XMLNode* root, std::vector<Mesh>& _
 
     while(element)
     {
-        size_t materialId;
+        int materialId;
         auto child = element->FirstChildElement("Material");
         stream << child->GetText() << std::endl;
         stream >> materialId;
@@ -1052,7 +1157,7 @@ inline void SceneReadMeshInstances(tinyxml2::XMLNode* root, std::vector<Mesh>& _
         element = element->NextSiblingElement("MeshInstance");
 
 
-
+        stream.clear();
     }
     stream.clear();
 }
@@ -1361,9 +1466,34 @@ inline void SceneReadScalings(tinyxml2::XMLElement* element, std::vector<glm::ma
 
 }
 
+inline void SceneReadComposite(tinyxml2::XMLElement* element, std::vector<glm::mat4>& _compositeMatrices)
+{
+    std::stringstream stream;
+    auto composite = element->FirstChildElement("Composite");
+
+    while(composite)
+    {
+        glm::vec4 v1,v2,v3,v4;
+
+        stream << composite->GetText();
+
+        stream >> v1.x >> v2.x >> v3.x >> v4.x >>
+                  v1.y >> v2.y >> v3.y >> v4.y >>
+                  v1.z >> v2.z >> v3.z >> v4.z >>
+                  v1.w >> v2.w >> v3.w >> v4.w;
+
+        glm::mat4 compositeMatrix = glm::mat4(v1,v2,v3,v4);
+        _compositeMatrices.push_back(compositeMatrix);
+
+        composite = composite->NextSiblingElement("Composite");
+        stream.clear();
+    }
+}
+
 inline void SceneReadTransformations(tinyxml2::XMLNode* root, std::vector<glm::mat4>& _translationMatrices,
                                                               std::vector<glm::mat4>& _rotationMatrices,
-                                                              std::vector<glm::mat4>& _scalingMatrices)
+                                                              std::vector<glm::mat4>& _scalingMatrices,
+                                                              std::vector<glm::mat4>& _compositeMatrices)
 {
 
     auto element = root->FirstChildElement("Transformations");
@@ -1373,6 +1503,7 @@ inline void SceneReadTransformations(tinyxml2::XMLNode* root, std::vector<glm::m
         SceneReadTranslations(element, _translationMatrices);
         SceneReadRotations(element, _rotationMatrices);
         SceneReadScalings(element, _scalingMatrices);
+        SceneReadComposite(element, _compositeMatrices);
     }
 
 }

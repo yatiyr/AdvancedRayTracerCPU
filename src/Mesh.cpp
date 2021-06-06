@@ -59,6 +59,21 @@ bool Mesh::Intersect(const Ray& ray, IntersectionReport& report, float tmin, flo
             else if(this->diffuseMap->type == TextureType::CHECKERBOARD)
             {
                 // Will be implemented
+                int u = (report.intersection.x + this->diffuseMap->offset) * this->diffuseMap->scale;
+                int v = (report.intersection.z + this->diffuseMap->offset) * this->diffuseMap->scale;
+                
+                int uPv = u + v;
+
+                // white
+                if(uPv % 2 == 0)
+                {
+                    report.texDiffuseReflectance = this->diffuseMap->blackColor;
+                }
+                // black
+                else
+                {
+                    report.texDiffuseReflectance = this->diffuseMap->whiteColor;
+                }
             } 
 
             report.diffuseActive = true;

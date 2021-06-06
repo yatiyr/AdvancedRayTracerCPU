@@ -12,7 +12,7 @@
             <NearDistance>1</NearDistance>
             <ImageResolution>800 480</ImageResolution>
             <ImageName>dragon_dynamic.png</ImageName>
-            <NumSamples>100</NumSamples>
+            <NumSamples>4</NumSamples>
         </Camera>
     </Cameras>
 
@@ -20,11 +20,11 @@
         <AmbientLight>25 25 25</AmbientLight>
         <PointLight id="1">
             <Position>400 100 200</Position>
-            <Intensity>70000 70000 70000</Intensity>
+            <Intensity>70000000 70000000 70000000</Intensity>
         </PointLight>
         <PointLight id="2">
             <Position>600 -200 200</Position>
-            <Intensity>80000 80000 80000</Intensity>
+            <Intensity>80000000 80000000 80000000</Intensity>
         </PointLight>
     </Lights>
 
