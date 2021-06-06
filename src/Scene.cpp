@@ -531,7 +531,7 @@ glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, in
         // Ray is entering
         if(glm::dot(ray.direction, iR.normal) < 0)
         {
-            glm::vec3 reflectedRayOrigin = iR.intersection + iR.normal * _shadowRayEpsilon;
+            glm::vec3 reflectedRayOrigin = iR.intersection + iR.normal * 0.000001f;
             glm::vec3 reflectedRayDir    = glm::normalize(glm::reflect(ray.direction, iR.normal));
 
             float cosTheta = glm::dot(-ray.direction, iR.normal);
@@ -545,7 +545,7 @@ glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, in
                 float cosPhi = std::sqrt(cosPhiSquared);
 
                 // Building transmitted ray
-                glm::vec3 transmittedRayOrigin = iR.intersection - iR.normal * _shadowRayEpsilon;            
+                glm::vec3 transmittedRayOrigin = iR.intersection - iR.normal * 0.000001f;            
                 glm::vec3 transmittedRayDir = (ray.direction + iR.normal*cosTheta)*coeffRatio - iR.normal*cosPhi;
 
                 Ray tRay(transmittedRayOrigin, transmittedRayDir);
@@ -608,7 +608,7 @@ glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, in
         {
             glm::vec3 invertedNormal = -iR.normal;
 
-            glm::vec3 reflectedRayOrigin = iR.intersection + invertedNormal * _shadowRayEpsilon;
+            glm::vec3 reflectedRayOrigin = iR.intersection + invertedNormal * 0.000001f;
             glm::vec3 reflectedRayDir    = glm::reflect(ray.direction, invertedNormal);
 
             float cosTheta = glm::dot(-ray.direction, invertedNormal);
@@ -622,7 +622,7 @@ glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, in
                 float cosPhi = std::sqrt(cosPhiSquared);
 
                 // Building transmitted ray
-                glm::vec3 transmittedRayOrigin = iR.intersection - invertedNormal * _shadowRayEpsilon;            
+                glm::vec3 transmittedRayOrigin = iR.intersection - invertedNormal * 0.000001f;            
                 glm::vec3 transmittedRayDir = (ray.direction + invertedNormal*cosTheta)*coeffRatio - invertedNormal*cosPhi;
 
                 Ray tRay(transmittedRayOrigin, transmittedRayDir);

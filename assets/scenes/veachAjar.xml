@@ -12,7 +12,7 @@
             <NearDistance>1.7321</NearDistance>
             <ImageResolution>1280 720</ImageResolution>
             <ImageName>VeachAjar.png</ImageName>
-            <NumSamples>16</NumSamples>
+            <NumSamples>4</NumSamples>
         </Camera>
     </Cameras>
 
