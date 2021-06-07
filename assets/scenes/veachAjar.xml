@@ -1,7 +1,7 @@
 <Scene>
     <BackgroundColor>0 0 0</BackgroundColor>
 
-    <MaxRecursionDepth>6</MaxRecursionDepth>
+    <MaxRecursionDepth>12</MaxRecursionDepth>
 
     <Cameras>
         <Camera id="1" type="lookAt">
@@ -10,9 +10,9 @@
             <Up>0 1 0</Up>
             <FovY>35.983398</FovY>
             <NearDistance>1.7321</NearDistance>
-            <ImageResolution>1280 720</ImageResolution>
+            <ImageResolution>3840 2400</ImageResolution>
             <ImageName>VeachAjar.png</ImageName>
-            <NumSamples>4</NumSamples>
+            <NumSamples>100</NumSamples>
         </Camera>
     </Cameras>
 
@@ -161,18 +161,18 @@
 
 
     <Objects>
-        <Mesh id="1"> <!-- Pot -->
+        <Mesh id="1" shadingMode="smooth"> <!-- Pot -->
             <Material>6</Material>
             <Transformations>c1</Transformations>
             <Faces plyFile="models/Mesh000.ply" />
         </Mesh>
 
-        <MeshInstance id="1" baseMeshId="1" resetTransform="true"> <!-- Pot -->
+        <MeshInstance id="1" baseMeshId="1" resetTransform="true" shadingMode="smooth"> <!-- Pot -->
             <Material>5</Material>
             <Transformations>c2</Transformations>
         </MeshInstance>
 
-        <MeshInstance id="2" baseMeshId="1" resetTransform="true"> <!-- Pot -->
+        <MeshInstance id="2" baseMeshId="1" resetTransform="true" shadingMode="smooth"> <!-- Pot -->
             <Material>3</Material>
             <Transformations>c3</Transformations>
         </MeshInstance>
@@ -258,18 +258,18 @@
             <Faces plyFile="models/Mesh014.ply" />
         </Mesh>
 
-        <Mesh id="17"> <!-- Pot -->
+        <Mesh id="17" shadingMode="smooth"> <!-- Pot -->
             <Material>6</Material>
             <Transformations>c1</Transformations>
             <Faces plyFile="models/Mesh009.ply" />
         </Mesh>
 
-        <MeshInstance id="3" baseMeshId="17" resetTransform="true"> <!-- Pot -->
+        <MeshInstance id="3" baseMeshId="17" resetTransform="true" shadingMode="smooth"> <!-- Pot -->
             <Material>5</Material>
             <Transformations>c2</Transformations>
         </MeshInstance>
 
-        <MeshInstance id="4" baseMeshId="17" resetTransform="true"> <!-- Pot -->
+        <MeshInstance id="4" baseMeshId="17" resetTransform="true" shadingMode="smooth"> <!-- Pot -->
             <Material>3</Material>
             <Transformations>c3</Transformations>
         </MeshInstance>

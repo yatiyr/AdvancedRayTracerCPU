@@ -283,7 +283,7 @@ glm::vec3 Scene::ComputeDiffuseSpecular(const IntersectionReport& report, const 
 
     for(size_t i=0; i<_pointLights.size(); i++)
     {
-        if(ShadowRayIntersection(0.01, 2000, _intersectionTestEpsilon, _shadowRayEpsilon, _pointLights[i].position, report, true, ray.time))
+        if(ShadowRayIntersection(0.0001, 2000, _intersectionTestEpsilon, _shadowRayEpsilon, _pointLights[i].position, report, true, ray.time))
         {
             continue;
         }
