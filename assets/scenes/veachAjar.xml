@@ -1,7 +1,7 @@
 <Scene>
     <BackgroundColor>0 0 0</BackgroundColor>
 
-    <MaxRecursionDepth>12</MaxRecursionDepth>
+    <MaxRecursionDepth>8</MaxRecursionDepth>
 
     <Cameras>
         <Camera id="1" type="lookAt">
@@ -10,9 +10,9 @@
             <Up>0 1 0</Up>
             <FovY>35.983398</FovY>
             <NearDistance>1.7321</NearDistance>
-            <ImageResolution>3840 2400</ImageResolution>
+            <ImageResolution>512 360</ImageResolution>
             <ImageName>VeachAjar.png</ImageName>
-            <NumSamples>100</NumSamples>
+            <NumSamples>4</NumSamples>
         </Camera>
     </Cameras>
 

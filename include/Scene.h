@@ -110,7 +110,7 @@ private:
 
     Camera _activeCamera; 
     std::vector<std::string> imageNames;
-    uint8_t* _image;
+    float* _image;
 
     Ray ComputePrimaryRay(int i, int j);
     std::vector<RayWithWeigth> ComputePrimaryRays(int i, int j);
@@ -157,7 +157,7 @@ public:
 
     glm::vec2 GiveCoords(int index, int width);
 
-    uint8_t* GetImage();
+    float* GetImage();
     void WritePixelCoord(int i, int j, const glm::vec3& color);
 };
 

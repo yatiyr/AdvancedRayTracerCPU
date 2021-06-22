@@ -52,7 +52,7 @@ message(STATUS "GLM included at ${GLM_INCLUDE_DIR}")
 include_directories(
 	"${CMAKE_SOURCE_DIR}/src"
 	"${CMAKE_SOURCE_DIR}/include"
-     "${CMAKE_SOURCE_DIR}/thirdparty/include"
+  "${CMAKE_SOURCE_DIR}/thirdparty/include"
 )
 
 # STB_IMAGE
@@ -61,7 +61,13 @@ add_library(STB_IMAGE "${CMAKE_SOURCE_DIR}/thirdparty/stb_image.cpp")
 # tinyxml2
 add_library(TINY_XML2 "${CMAKE_SOURCE_DIR}/thirdparty/tinyxml2.cpp")
 
-set(LIBS pthread STB_IMAGE TINY_XML2)
+# rgbe
+add_library(RGBE "${CMAKE_SOURCE_DIR}/thirdparty/rgbe.c")
+
+# tinyexr
+add_library(TINY_EXR "${CMAKE_SOURCE_DIR}/thirdparty/tinyexr.cpp")
+
+set(LIBS pthread STB_IMAGE TINY_XML2 RGBE TINY_EXR)
 
 target_link_libraries(${PROJECT_NAME} ${LIBS})
 

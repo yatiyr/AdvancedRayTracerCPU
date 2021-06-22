@@ -39,7 +39,7 @@ Scene::Scene(const std::string& filepath)
     _imageHeight = _activeCamera.imageResolution.y;
     _imageWidth  = _activeCamera.imageResolution.x;
     worksize = _imageHeight * _imageWidth;
-    _image = new uint8_t[_imageHeight*_imageWidth*4];
+    _image = new float[_imageHeight*_imageWidth*3];
 
     coreSize = std::thread::hardware_concurrency();
     count = 0;
@@ -120,7 +120,7 @@ void Scene::RenderThread()
     }
 }
 
-uint8_t* Scene::GetImage()
+float* Scene::GetImage()
 {
     Timer t;
     RenderThread();
@@ -133,20 +133,18 @@ void Scene::ClearImage()
     {
         for(int j=0; j<_imageWidth; j++)
         {
-            _image[j * 4 + (_imageWidth * i *4)]     = 0.0;
-            _image[j * 4 + (_imageWidth * i *4) + 1] = 0.0;
-            _image[j * 4 + (_imageWidth * i *4) + 2] = 0.0;
-            _image[j * 4 + (_imageWidth * i *4) + 3] = 1.0f;            
+            _image[j * 3 + (_imageWidth * i *3)]     = 0.0;
+            _image[j * 3 + (_imageWidth * i *3) + 1] = 0.0;
+            _image[j * 3 + (_imageWidth * i *3) + 2] = 0.0;          
         }
     }    
 }
 
 void Scene::WritePixelCoord(int i, int j, const glm::vec3& color)
 {
-    _image[i * 4 + (_imageWidth * j *4)]     = color.x;
-    _image[i * 4 + (_imageWidth * j *4) + 1] = color.y;
-    _image[i * 4 + (_imageWidth * j *4) + 2] = color.z;
-    _image[i * 4 + (_imageWidth * j *4) + 3] = 1.0f;
+    _image[i * 3 + (_imageWidth * j *3)]     = color.x;
+    _image[i * 3 + (_imageWidth * j *3) + 1] = color.y;
+    _image[i * 3 + (_imageWidth * j *3) + 2] = color.z;
 }
 
 
@@ -417,7 +415,7 @@ RayTraceResult Scene::RayTrace(const Ray& ray, bool backfaceCulling)
         return result;
     }
 
-    result.resultColor = glm::clamp(_backgroundColor, glm::vec3(0.0f), glm::vec3(255.0f));
+    result.resultColor = glm::clamp(_backgroundColor, glm::vec3(0.0f), glm::vec3(FLT_MAX));
     result.hit = false;
     return result;
 
@@ -466,7 +464,7 @@ glm::vec3 Scene::TraceAndFilter(std::vector<RayWithWeigth> rwwVector, int x, int
     result.y = weightedSum.y / totalWeight.y;
     result.z = weightedSum.z / totalWeight.z;
 
-    return glm::clamp(result, glm::vec3(0.f), glm::vec3(255.0f));
+    return glm::clamp(result, glm::vec3(0.f), glm::vec3(FLT_MAX));
     
 }
 
