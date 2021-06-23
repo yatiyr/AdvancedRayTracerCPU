@@ -1,0 +1,20 @@
+In this assignment you are expected to add HDR imaging and advanced lighting support to your ray tracers. Please make sure you carefully review the last two weeks' lectures.
+
+In HDR imaging, we no longer clamp pixel values at 255 neither do we quantize them to integers. Instead we save the resulting image (which should be in floating point) to an HDR file format without clamping. You can use EXR as this is most commonly supported. You can use libopenexr or 3rd party libraries that support saving (and reading) images in this format. You need reading support as well as HDR images can also be textures. Actually, there is an older and a simpler file format with extension ".hdr". If you want to save your images in this format, you can download the source and header files in this link: https://www.graphics.cornell.edu/~bjw/rgbe.html. There is also a readme file that explains how to use this read and write images in this format.
+
+HDR images can be viewed using various tools. Let me shamelessly advertise my own software called "Bracket". You can download it from my web page: http://user.ceng.metu.edu.tr/~akyuz/bracket/bracket.html (It runs well on Windows but it could be outdated for Linux and Mac -- so much for the shameless advertisement!). Alternatively you can use an online HDR-viewer: https://viewer.openhdr.org/
+
+HDR images need to be tone mapped to store them in standard image file formats. Bracket supports tone mapping but there are also many other libraries that you can use. A well-known library to check out is pfstools: http://pfstools.sourceforge.net/. If you are a MATLAB or Octave person, you can use the HDR Toolbox from this link: https://github.com/banterle/HDR_Toolbox
+
+Reinhard's global photographic tone mapping operator is pretty simple to implement as well (local version is a bit more complicated). I actually suggest you to implement the global version to better understand what tone mapping is.
+
+Besides HDR and tone mapping, the second focus of this homework is advanced light sources. You will have to implement support for 4 new lights:
+
+    Directional lights
+    Spot lights
+    Area lights
+    Environment lights
+
+Shared scene files provide examples for each of these light sources. Please use the forum actively for questions. I sometimes forget to define some XML elements/attributes and if anything is not clear, please ask.
+
+Good luck.

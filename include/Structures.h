@@ -9,6 +9,18 @@
 #include <list>
 #include <stack>
 #include <Ray.h>
+#include <Texture.h>
+
+enum TMO
+{
+    PHOTOHRAPHIC = 0
+};
+
+enum RenderMode
+{
+    CLASSIC = 0,
+    HDR     = 1
+};
 
 struct Camera
 {
@@ -22,6 +34,19 @@ struct Camera
     float focusDistance;
     float apertureSize;
     int sampleNumber;
+
+
+    // Rendering Mode
+    RenderMode renderMode = RenderMode::CLASSIC;    
+
+    // Tone Map values  
+    TMO tmo = TMO::PHOTOHRAPHIC;
+    float keyValue = 0.18;
+    float burn_percentage = 1.0;
+    float saturation = 1.0;
+    float gamma = 2.2;
+
+
 };
 
 struct PointLight
@@ -67,6 +92,42 @@ struct AreaLight
 
         this->u = glm::normalize(glm::cross(nBar, normal));
         this->v = glm::normalize(glm::cross(normal, u));
+
+    }
+};
+
+struct DirectionalLight
+{
+    alignas(16) glm::vec3 direction;
+    alignas(16) glm::vec3 radiance;
+};
+
+struct SphericalDirectionalLight
+{
+    Texture hdrTexture;
+};
+
+struct SpotLight
+{
+    alignas(16) glm::vec3 position;
+    alignas(16) glm::vec3 direction;
+    alignas(16) glm::vec3 intensity;
+
+    // Angles will be converted to radians
+    // while creating the struct
+    float coverageAngle;
+    float falloffAngle;
+    float exponent = 4;
+
+
+    float GetFollowFactor(float theta)
+    {
+        return std::pow((theta - std::cos(coverageAngle/2))/
+                        (std::cos(falloffAngle/2) - std::cos(coverageAngle/2)),exponent);
+    }
+
+    glm::vec3 GetL(glm::vec3 position)
+    {
 
     }
 };

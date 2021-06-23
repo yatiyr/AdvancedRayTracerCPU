@@ -21,7 +21,7 @@ Scene::Scene(const std::string& filepath)
 
     SceneReadConstants(root, _backgroundColor, _shadowRayEpsilon, _intersectionTestEpsilon, _maxRecursionDepth);
     SceneReadCameras(root, _cameras, imageNames, _imageName);
-    SceneReadLights(root, _pointLights, _areaLights, _ambientLight);
+    SceneReadLights(root, _pointLights, _areaLights, _environmentLights, _directionalLights, _spotLights, _images, _ambientLight);
     SceneReadMaterials(root, _materials);
     SceneReadVertexData(root, _vertexData);
     SceneReadTexCoordData(root, _texCoordData);

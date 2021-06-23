@@ -1,6 +1,5 @@
 #include <Renderer.h>
 
-
 Renderer::Renderer(const std::string& filepath) : scene(std::string(ROOT_DIR) + filepath)
 {
     keyValue   = 0.18;
@@ -84,9 +83,9 @@ void Renderer::ToneMap(float* pixels, int width, int height)
     for(int i=0; i<width*height; i++)
     {
         // Luminance mapping
-        pixels[i*3]     = (keyValue * pixels[i*3])/av_lum;
-        pixels[i*3 + 1] = (keyValue * pixels[i*3 + 1])/av_lum;
-        pixels[i*3 + 2] = (keyValue * pixels[i*3 + 2])/av_lum;
+        pixels[i*3]     = (scene._activeCamera.keyValue * pixels[i*3])/av_lum;
+        pixels[i*3 + 1] = (scene._activeCamera.keyValue * pixels[i*3 + 1])/av_lum;
+        pixels[i*3 + 2] = (scene._activeCamera.keyValue * pixels[i*3 + 2])/av_lum;
 
         // Sigmoidal compression
 
@@ -102,12 +101,22 @@ void Renderer::ToneMap(float* pixels, int width, int height)
 
 
         // gamma correction and scaling to [0, 255] range
-        pixels[i*3]     = 255 * (std::pow((pixels[i*3]), 1/gamma));
-        pixels[i*3 + 1] = 255 * (std::pow((pixels[i*3 + 1]), 1/gamma));
-        pixels[i*3 + 2] = 255 * (std::pow((pixels[i*3 + 2]), 1/gamma));
+        pixels[i*3]     = 255 * (std::pow((pixels[i*3]), 1/scene._activeCamera.gamma));
+        pixels[i*3 + 1] = 255 * (std::pow((pixels[i*3 + 1]), 1/scene._activeCamera.gamma));
+        pixels[i*3 + 2] = 255 * (std::pow((pixels[i*3 + 2]), 1/scene._activeCamera.gamma));
 
     }
 
+}
+
+void Renderer::Clamp0_255(float* pixels, int width, int height)
+{
+    for(int i=0; i<width*height; i++)
+    {
+        pixels[i*3]     = clamp(pixels[i*3], (float)0, (float)255);
+        pixels[i*3 + 1] = clamp(pixels[i*3 + 1], (float)0, (float)255);
+        pixels[i*3 + 2] = clamp(pixels[i*3 + 2], (float)0, (float)255);
+    }
 }
 
 void Renderer::WriteExr(float* rgb)
@@ -179,13 +188,25 @@ void Renderer::Render()
 
     float* obtainedImage = scene.GetImage();
 
-    std::string outputPath = "outputs/" + scene._imageName;
-    WriteExr(obtainedImage);
+    if(scene._activeCamera.renderMode == RenderMode::CLASSIC)
+    {
+        std::string outputPath = "outputs/" + scene._imageName;
+        Clamp0_255(obtainedImage, scene._imageWidth, scene._imageHeight);
+        result = GiveResult(obtainedImage, scene._imageWidth, scene._imageHeight);
+        stbi_write_png(outputPath.c_str(), scene._imageWidth, scene._imageHeight, 3, result, scene._imageWidth *3);        
+    }
+    else if(scene._activeCamera.renderMode == RenderMode::HDR)
+    {
+        std::string outputPath = "outputs/" + scene._imageName;
+        WriteExr(obtainedImage);
 
-    ToneMap(obtainedImage, scene._imageWidth, scene._imageHeight);
-    result = GiveResult(obtainedImage, scene._imageWidth, scene._imageHeight);
+        int dotIndex = outputPath.find('.');
+        std::string pathWithoutExtension = outputPath.substr(0, dotIndex) + "_tonemapped.png"; 
+        ToneMap(obtainedImage, scene._imageWidth, scene._imageHeight);
+        result = GiveResult(obtainedImage, scene._imageWidth, scene._imageHeight);
+        stbi_write_png(pathWithoutExtension.c_str(), scene._imageWidth, scene._imageHeight, 3, result, scene._imageWidth *3);        
+    }
 
-    stbi_write_png(outputPath.c_str(), scene._imageWidth, scene._imageHeight, 3, result, scene._imageWidth *3);
 
     delete[] result;
 

@@ -99,6 +99,9 @@ private:
 
     std::vector<PointLight> _pointLights;
     std::vector<AreaLight> _areaLights;
+    std::vector<SphericalDirectionalLight> _environmentLights;
+    std::vector<DirectionalLight> _directionalLights;
+    std::vector<SpotLight> _spotLights;
 
     std::vector<Material>   _materials;
     std::vector<Camera>     _cameras;
@@ -107,8 +110,6 @@ private:
     float _intersectionTestEpsilon;    
     int _maxRecursionDepth;
 
-
-    Camera _activeCamera; 
     std::vector<std::string> imageNames;
     float* _image;
 
@@ -151,13 +152,16 @@ public:
 
     int _imageWidth;
     int _imageHeight;
-    std::string _imageName;   
+    std::string _imageName;
+    Camera _activeCamera;
+
     Scene(const std::string& filepath);
     ~Scene();
 
     glm::vec2 GiveCoords(int index, int width);
 
     float* GetImage();
+
     void WritePixelCoord(int i, int j, const glm::vec3& color);
 };
 

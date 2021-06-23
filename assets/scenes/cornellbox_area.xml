@@ -22,7 +22,7 @@
             <Position>0 9.8 2</Position>
             <Normal>0 -1 0</Normal>
             <Size>3</Size> <!-- extent -->
-            <Radiance>80000 80000 80000</Radiance>
+            <Radiance>150000 150000 150000</Radiance>
         </AreaLight>
     </Lights>
 

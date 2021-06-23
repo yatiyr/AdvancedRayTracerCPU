@@ -46,7 +46,6 @@ enum NoiseConversionType
     LINEAR = 1
 };
 
-// TODO: I will add perlin noise soon
 class Texture 
 {
 public:

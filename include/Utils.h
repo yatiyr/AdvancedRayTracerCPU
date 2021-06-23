@@ -31,6 +31,20 @@ inline std::vector<std::string> split(std::string text)
     return vec;
 }
 
+template<typename T>
+inline T clamp(const T& val, const T& low, const T& high)
+{
+    T result = val;
+
+    if(result < low)
+        result = low;
+    else if(result > high)
+        result = high;
+
+    return result;
+}
+
+
 inline void SceneReadConstants(tinyxml2::XMLNode* root, glm::vec3& _backgroundColor, float& _shadowRayEpsilon, float& _intersectionTestEpsilon, int& _maxRecursionDepth)
 {
     std::stringstream stream;
@@ -171,7 +185,63 @@ inline void SceneReadCameras(tinyxml2::XMLNode* root, std::vector<Camera>& _came
         imageNames.push_back(imageName);
         _imageName = imageName;
 
-        auto child = element->FirstChildElement("NumSamples");
+        int dotIndex = imageName.find(".");
+        std::string extensionType = imageName.substr(dotIndex, imageName.size());
+
+        if(extensionType == "exr")
+            camera.renderMode = RenderMode::HDR;
+        else
+            camera.renderMode = RenderMode::CLASSIC;
+
+        auto child = element->FirstChildElement("Tonemap");
+        if(child)
+        {
+            auto element = child->FirstChildElement("TMO");
+            if(element)
+            {
+                if(std::strcmp(element->GetText(), "Photographic") == 0)
+                    camera.tmo = TMO::PHOTOHRAPHIC;
+            }
+            else
+                camera.tmo = TMO::PHOTOHRAPHIC;
+
+            element = child->FirstChildElement("TMOOptions");
+            if(element)
+            {
+                stream << element->GetText() << std::endl;
+                stream >> camera.keyValue >> camera.burn_percentage;
+            }
+            else
+            {
+                camera.keyValue = 0.18;
+                camera.burn_percentage = 1;
+            }
+
+            element = child->FirstChildElement("Saturation");
+            if(element)
+            {
+                stream << element->GetText() << std::endl;
+                stream >> camera.saturation;
+            }
+            else
+            {
+                camera.saturation = 1;
+            }
+
+            element = child->FirstChildElement("Gamma");
+
+            if(element)
+            {
+                stream << element->GetText() << std::endl;
+                stream >> camera.gamma;
+            }
+            else
+            {
+                camera.gamma = 2.2;
+            }
+        }
+
+        child = element->FirstChildElement("NumSamples");
         int sampleNumber = 1;
         if(child)
         {
@@ -206,7 +276,7 @@ inline void SceneReadCameras(tinyxml2::XMLNode* root, std::vector<Camera>& _came
 }
 
 
-inline void SceneReadLights(tinyxml2::XMLNode* root, std::vector<PointLight>& _pointLights, std::vector<AreaLight>& _areaLights, glm::vec3& _ambientLight)
+inline void SceneReadLights(tinyxml2::XMLNode* root, std::vector<PointLight>& _pointLights, std::vector<AreaLight>& _areaLights, std::vector<SphericalDirectionalLight>& _environmentLights, std::vector<DirectionalLight>& _directionalLights, std::vector<SpotLight>& _spotLights, std::vector<Image*>& _images, glm::vec3& _ambientLight)
 {
     std::stringstream stream;
     // Get Lights
@@ -218,9 +288,9 @@ inline void SceneReadLights(tinyxml2::XMLNode* root, std::vector<PointLight>& _p
     _ambientLight.y /= 255.99;
     _ambientLight.z /= 255.99;
     element = element->FirstChildElement("PointLight");
-    PointLight pointLight;
     while(element)
     {
+        PointLight pointLight;        
         child = element->FirstChildElement("Position");
         stream << child->GetText() << std::endl;
         child = element->FirstChildElement("Intensity");
@@ -262,6 +332,73 @@ inline void SceneReadLights(tinyxml2::XMLNode* root, std::vector<PointLight>& _p
         _areaLights.push_back(areaLight);
         element = element->NextSiblingElement("AreaLight");
     }
+
+    element = root->FirstChildElement("Lights");
+    element = element->FirstChildElement("SphericalDirectionalLight");
+    while(element)
+    {
+        int imageId = 1;
+        SphericalDirectionalLight environmentLight;
+        child = element->FirstChildElement("ImageId");
+        stream << child->GetText() << std::endl;
+        stream >> imageId;
+        environmentLight.hdrTexture.BindImage(_images[imageId - 1]);
+
+        _environmentLights.push_back(environmentLight);
+        element = element->NextSiblingElement("SphericalDirectionalLight");
+    }
+
+    element = root->FirstChildElement("Lights");
+    element = element->FirstChildElement("DirectionalLight");
+    while(element)
+    {
+        DirectionalLight directionalLight;
+        std::stringstream ss;
+        
+        child = element->FirstChildElement("Direction");
+        ss << child->GetText() << std::endl;
+        ss >> directionalLight.direction.x >> directionalLight.direction.y >> directionalLight.direction.z;
+
+        child = element->FirstChildElement("Radiance");
+        ss << child->GetText() << std::endl;
+        ss >> directionalLight.radiance.x >> directionalLight.radiance.y >> directionalLight.radiance.z;
+
+        _directionalLights.push_back(directionalLight);
+        element = element->NextSiblingElement("DirectionalLight");
+    }
+
+    element = root->FirstChildElement("Lights");
+    element = element->FirstChildElement("SpotLight");
+    while(element)
+    {
+        SpotLight spotLight;
+        std::stringstream ss;
+
+        child = element->FirstChildElement("Position");
+        ss << child->GetText() << std::endl;
+        ss >> spotLight.position.x >> spotLight.position.y >> spotLight.position.z;
+
+        child = element->FirstChildElement("Direction");
+        ss << child->GetText() << std::endl;
+        ss >> spotLight.direction.x >> spotLight.direction.y >> spotLight.direction.z;
+        spotLight.direction = glm::normalize(spotLight.direction);
+
+        child = element->FirstChildElement("Intensity");
+        ss << child->GetText() << std::endl;
+        ss >> spotLight.intensity.x >> spotLight.intensity.y >> spotLight.intensity.z;
+
+        child = element->FirstChildElement("CoverageAngle");
+        ss << child->GetText() << std::endl;
+        ss >> spotLight.coverageAngle;
+
+        child = element->FirstChildElement("FalloffAngle");
+        ss << child->GetText() << std::endl;
+        ss >> spotLight.falloffAngle;
+
+        _spotLights.push_back(spotLight);
+        element = element->NextSiblingElement("SpotLight");
+    }
+
     stream.clear();
 }
 

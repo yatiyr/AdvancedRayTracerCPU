@@ -2,16 +2,46 @@
 #define __IMAGE_H__
 
 #include <stb_image.h>
+#include <tinyexr.h>
 #include <glm/glm.hpp>
 #include <algorithm>
+#include <string>
+#include <iostream>
 
 class Image {
 public:
     int height, width, channels;
-    unsigned char* pixels;
+    float* pixels;
     Image(const char* filepath)
     {
-        pixels = stbi_load(filepath, &width, &height, &channels, 0);
+        std::string path(filepath);
+        std::string extensionName = path.substr(path.find("."), path.size());
+
+        if(extensionName == "exr")
+        {
+            const char* err = nullptr;
+            int ret = LoadEXR(&pixels, &width, &height, filepath, &err);
+            channels = 4;
+            if(ret != 0)
+            {
+                if(err)
+                {
+                    fprintf(stderr, "ERR : %s\n", err);
+                    FreeEXRErrorMessage(err);
+                }
+            }
+        }
+        else
+        {
+            unsigned char* tmpPixels;
+            tmpPixels = stbi_load(filepath, &width, &height, &channels, 0);
+            pixels = (float*)malloc(sizeof(float)*width*height*channels);
+
+            for(int i=0; i<width*height*channels; i++)
+                pixels[i] = (float)tmpPixels[i];
+
+            free(tmpPixels);
+        } 
     }
 
     ~Image()
@@ -25,9 +55,9 @@ public:
         int indexX = std::clamp(j, 0, height - 1) * width * channels;
         int indexY = std::clamp(i ,0, width - 1) * channels;
 
-        float r = (int) pixels[indexX + indexY];
-        float g = (int) pixels[indexX + indexY + 1];
-        float b = (int) pixels[indexX + indexY + 2];
+        float r = pixels[indexX + indexY];
+        float g = pixels[indexX + indexY + 1];
+        float b = pixels[indexX + indexY + 2];
 
         return glm::vec3(r,g,b);        
     }

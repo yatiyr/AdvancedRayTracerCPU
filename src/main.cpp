@@ -72,7 +72,7 @@ void WriteExr(float* rgb, int width, int height)
 int main(int argc, char** argv)
 {
 
-    Renderer RnDr("assets/scenes/scienceTree.xml");
+    Renderer RnDr("assets/scenes/ellipsoids_texture.xml");
 
     /*
     std::string path = std::string(ROOT_DIR) + "assets/scenes/textures/grace-new.exr";

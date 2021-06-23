@@ -7,6 +7,8 @@
 #include <stb_image_write.h>
 #include <tinyexr.h>
 #include <Utils.h>
+#include <math.h>
+#include <algorithm>
 
 class Renderer
 {
@@ -23,6 +25,7 @@ private:
 
     uint8_t* GiveResult(float* pixels, int width, int height);
     void ToneMap(float* pixels, int width, int height);
+    void Clamp0_255(float* pixels, int width, int height);
 
 public:
     Renderer(const std::string& filepath);
