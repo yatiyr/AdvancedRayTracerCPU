@@ -42,7 +42,7 @@ Scene::Scene(const std::string& filepath)
     worksize = _imageHeight * _imageWidth;
     _image = new float[_imageHeight*_imageWidth*3];
 
-    coreSize = std::thread::hardware_concurrency();
+    coreSize = 1;//std::thread::hardware_concurrency();
     count = 0;
 
     backfaceCulling = true;
@@ -292,7 +292,7 @@ glm::vec3 Scene::ComputeDiffuseSpecular(const IntersectionReport& report, const 
     {
 
         result += _lightPointerVector[i]->ComputeDiffuseSpecular(ray, diffuseReflectance, specularReflectance, phongExponent,
-                                                                 report, 0.0001, 2000, _intersectionTestEpsilon, _shadowRayEpsilon, 
+                                                                 report, 0.00001, 2000, _intersectionTestEpsilon, _shadowRayEpsilon, 
                                                                  true, ray.time, _objectPointerVector);
 
     }

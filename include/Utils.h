@@ -290,9 +290,7 @@ inline void SceneReadLights(tinyxml2::XMLNode* root, std::vector<PointLight>& _p
     auto child = element->FirstChildElement("AmbientLight");
     stream << child->GetText() << std::endl;
     stream >> _ambientLight.x >> _ambientLight.y >> _ambientLight.z;
-    _ambientLight.x /= 255.99;
-    _ambientLight.y /= 255.99;
-    _ambientLight.z /= 255.99;
+
     element = element->FirstChildElement("PointLight");
     while(element)
     {
@@ -365,9 +363,12 @@ inline void SceneReadLights(tinyxml2::XMLNode* root, std::vector<PointLight>& _p
         ss << child->GetText() << std::endl;
         ss >> directionalLight.direction.x >> directionalLight.direction.y >> directionalLight.direction.z;
 
+        directionalLight.direction = glm::normalize(directionalLight.direction);
+
         child = element->FirstChildElement("Radiance");
         ss << child->GetText() << std::endl;
         ss >> directionalLight.radiance.x >> directionalLight.radiance.y >> directionalLight.radiance.z;
+
 
         _directionalLights.push_back(directionalLight);
         element = element->NextSiblingElement("DirectionalLight");

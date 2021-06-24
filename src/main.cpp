@@ -3,7 +3,7 @@
 
 int main(int argc, char** argv)
 {
-    Renderer RnDr("assets/scenes/ellipsoids_texture.xml");
+    Renderer RnDr("assets/scenes/cube_directional.xml");
 
     try
     {    
