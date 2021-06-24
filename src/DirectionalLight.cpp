@@ -30,7 +30,7 @@ glm::vec3 DirectionalLight::ComputeDiffuseSpecular(const Ray& ray, glm::vec3& di
 
     glm::vec3 result = glm::vec3(0.0);
 
-    if(ShadowRayIntersection(tmin, tmax, intersectionTestEpsilon, shadowRayEpsilon, report, true, ray.time, objectPointerVector))
+    if(ShadowRayIntersection(tmin, tmax, intersectionTestEpsilon, shadowRayEpsilon, report, backfaceCulling, ray.time, objectPointerVector))
     {
         return glm::vec3(0.0);
     }

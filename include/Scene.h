@@ -35,7 +35,8 @@
 #include <AreaLight.h>
 #include <DirectionalLight.h>
 #include <PointLight.h>
-// TODO: SPOT LIGHT AND ENVIRONMENT LIGHTS WILL COME
+#include <SpotLight.h>
+#include <EnvironmentLight.h>
 
 struct WorkGroup
 {
@@ -105,7 +106,7 @@ private:
 
     std::vector<PointLight> _pointLights;
     std::vector<AreaLight> _areaLights;
-    std::vector<SphericalDirectionalLight> _environmentLights;
+    std::vector<EnvironmentLight> _environmentLights;
     std::vector<DirectionalLight> _directionalLights;
     std::vector<SpotLight> _spotLights;
 

@@ -112,8 +112,8 @@ public:
 
     ~Texture()
     {
-        if(image != nullptr)
-            delete image;
+        //if(image != nullptr)
+        //    delete image;
     }
 
     void BindImage(Image *image)

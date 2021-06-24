@@ -3,7 +3,7 @@
 
 int main(int argc, char** argv)
 {
-    Renderer RnDr("assets/scenes/cube_directional.xml");
+    Renderer RnDr("assets/scenes/head_env_light.xml");
 
     try
     {    

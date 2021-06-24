@@ -68,7 +68,7 @@ glm::vec3 AreaLight::ComputeDiffuseSpecular(const Ray& ray, glm::vec3& diffuseRe
     float randomOffsetV = areaLightPositionGenerator->Generate();
     glm::vec3 randomPoint = position + extent*(randomOffsetU*u + randomOffsetV*v);
 
-    if(ShadowRayIntersection(tmin, tmax, intersectionTestEpsilon, shadowRayEpsilon, report, true, ray.time, objectPointerVector))
+    if(ShadowRayIntersection(tmin, tmax, intersectionTestEpsilon, shadowRayEpsilon, report, backfaceCulling, ray.time, objectPointerVector))
     {
         return glm::vec3(0.0);
     }

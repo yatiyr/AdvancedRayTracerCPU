@@ -21,19 +21,19 @@ Scene::Scene(const std::string& filepath)
 
     SceneReadConstants(root, _backgroundColor, _shadowRayEpsilon, _intersectionTestEpsilon, _maxRecursionDepth);
     SceneReadCameras(root, _cameras, imageNames, _imageName);
+    SceneReadTextures(root, _images, _textures, _backgroundTextureIndex);    
     SceneReadLights(root, _pointLights, _areaLights, _environmentLights, _directionalLights, _spotLights, _images, _ambientLight);
     SceneReadMaterials(root, _materials);
     SceneReadVertexData(root, _vertexData);
     SceneReadTexCoordData(root, _texCoordData);
     SceneReadTransformations(root, _translationMatrices, _rotationMatrices, _scalingMatrices, _compositeMatrices);
-    SceneReadTextures(root, _images, _textures, _backgroundTextureIndex);
     SceneReadMeshes(root, _meshes, _textures, _vertexData, _texCoordData, _rotationMatrices, _scalingMatrices, _translationMatrices, _compositeMatrices);
     SceneReadMeshInstances(root, _meshes, _textures, _meshInstances, _rotationMatrices, _scalingMatrices, _translationMatrices, _compositeMatrices);
     SceneReadSpheres(root, _spheres, _textures, _vertexData, _rotationMatrices, _scalingMatrices, _translationMatrices, _compositeMatrices);
     SceneReadTriangles(root, _triangles, _textures, _vertexData, _texCoordData, _rotationMatrices, _scalingMatrices, _translationMatrices, _compositeMatrices);
 
     ScenePopulateObjects(_objectPointerVector, _meshes, _meshInstances, _spheres, _triangles);
-    ScenePopulateLights(_lightPointerVector, _pointLights, _areaLights, _directionalLights); // TODO: Spot Light and Environment lights will come
+    ScenePopulateLights(_lightPointerVector, _pointLights, _areaLights, _directionalLights, _spotLights, _environmentLights);
 
     _activeCamera = _cameras[0];
 
@@ -42,7 +42,7 @@ Scene::Scene(const std::string& filepath)
     worksize = _imageHeight * _imageWidth;
     _image = new float[_imageHeight*_imageWidth*3];
 
-    coreSize = 1;//std::thread::hardware_concurrency();
+    coreSize = std::thread::hardware_concurrency();
     count = 0;
 
     backfaceCulling = true;
@@ -366,6 +366,23 @@ glm::vec3 Scene::TraceAndFilter(std::vector<RayWithWeigth> rwwVector, int x, int
                 weightedSum += GaussianWeight(rwwVector[i].distX, rwwVector[i].distY, stdDev) * texColor;
                 totalWeight += GaussianWeight(rwwVector[i].distX, rwwVector[i].distY, stdDev);
             }
+            else if(_environmentLights.size() > 0)
+            {
+                glm::vec3 l = rwwVector[i].r.direction;
+                glm::vec3 v = glm::vec3(0.0, 1.0, 0.0);
+                glm::vec3 u = glm::vec3(1.0, 0.0, 0.0);
+                glm::vec3 w = glm::vec3(0.0, 0.0, 1.0);
+
+                float theta = std::acos(glm::dot(l,v));
+                float phi   = std::atan2(glm::dot(l,w), glm::dot(l,u));
+
+                float tU = (-phi + M_PI) / (2 * M_PI);
+                float tV = theta / M_PI;
+
+                glm::vec3 envColor = _environmentLights[0].hdrTexture.Fetch(tU, tV);
+                weightedSum += GaussianWeight(rwwVector[i].distX, rwwVector[i].distY, stdDev) * envColor;
+                totalWeight += GaussianWeight(rwwVector[i].distX, rwwVector[i].distY, stdDev);                 
+            }            
             else
             {            
                 weightedSum += GaussianWeight(rwwVector[i].distX, rwwVector[i].distY, stdDev) * rtResult.resultColor;

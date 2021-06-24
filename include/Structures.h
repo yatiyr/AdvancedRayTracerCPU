@@ -138,34 +138,4 @@ struct OrthonormalBasis
     alignas(16) glm::vec3 v;
 };
 
-struct SphericalDirectionalLight
-{
-    Texture hdrTexture;
-};
-
-struct SpotLight
-{
-    alignas(16) glm::vec3 position;
-    alignas(16) glm::vec3 direction;
-    alignas(16) glm::vec3 intensity;
-
-    // Angles will be converted to radians
-    // while creating the struct
-    float coverageAngle;
-    float falloffAngle;
-    float exponent = 4;
-
-
-    float GetFollowFactor(float theta)
-    {
-        return std::pow((theta - std::cos(coverageAngle/2))/
-                        (std::cos(falloffAngle/2) - std::cos(coverageAngle/2)),exponent);
-    }
-
-    glm::vec3 GetL(glm::vec3 position)
-    {
-
-    }
-};
-
 #endif

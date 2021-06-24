@@ -15,7 +15,7 @@ public:
     Image(const char* filepath)
     {
         std::string path(filepath);
-        std::string extensionName = path.substr(path.find("."), path.size());
+        std::string extensionName = path.substr(path.find_last_of(".")+1, path.size());
 
         if(extensionName == "exr")
         {

@@ -16,6 +16,9 @@
 #include <AreaLight.h>
 #include <DirectionalLight.h>
 #include <PointLight.h>
+#include <SpotLight.h>
+#include <EnvironmentLight.h>
+
 
 
 const double EULER =  2.71828182845904523536;
@@ -23,6 +26,10 @@ const double EULER =  2.71828182845904523536;
 #ifndef M_PI
     #define M_PI 3.14159265358979323846
 #endif
+
+
+#define RADIANS(x) (x * M_PI) / 180
+
 
 inline std::vector<std::string> split(std::string text)
 {
@@ -191,7 +198,7 @@ inline void SceneReadCameras(tinyxml2::XMLNode* root, std::vector<Camera>& _came
         imageNames.push_back(imageName);
         _imageName = imageName;
 
-        int dotIndex = imageName.find(".");
+        int dotIndex = imageName.find(".")+1;
         std::string extensionType = imageName.substr(dotIndex, imageName.size());
 
         if(extensionType == "exr")
@@ -282,14 +289,23 @@ inline void SceneReadCameras(tinyxml2::XMLNode* root, std::vector<Camera>& _came
 }
 
 
-inline void SceneReadLights(tinyxml2::XMLNode* root, std::vector<PointLight>& _pointLights, std::vector<AreaLight>& _areaLights, std::vector<SphericalDirectionalLight>& _environmentLights, std::vector<DirectionalLight>& _directionalLights, std::vector<SpotLight>& _spotLights, std::vector<Image*>& _images, glm::vec3& _ambientLight)
+inline void SceneReadLights(tinyxml2::XMLNode* root, std::vector<PointLight>& _pointLights, std::vector<AreaLight>& _areaLights, std::vector<EnvironmentLight>& _environmentLights, std::vector<DirectionalLight>& _directionalLights, std::vector<SpotLight>& _spotLights, std::vector<Image*>& _images, glm::vec3& _ambientLight)
 {
     std::stringstream stream;
     // Get Lights
     auto element = root->FirstChildElement("Lights");
     auto child = element->FirstChildElement("AmbientLight");
-    stream << child->GetText() << std::endl;
-    stream >> _ambientLight.x >> _ambientLight.y >> _ambientLight.z;
+    if(child)
+    {
+        stream << child->GetText() << std::endl;
+        stream >> _ambientLight.x >> _ambientLight.y >> _ambientLight.z;
+    }
+    else
+    {
+        _ambientLight.x = 0;
+        _ambientLight.y = 0;
+        _ambientLight.z = 0;
+    }
 
     element = element->FirstChildElement("PointLight");
     while(element)
@@ -342,12 +358,13 @@ inline void SceneReadLights(tinyxml2::XMLNode* root, std::vector<PointLight>& _p
     while(element)
     {
         int imageId = 1;
-        SphericalDirectionalLight environmentLight;
+        EnvironmentLight environmentLight;
         child = element->FirstChildElement("ImageId");
         stream << child->GetText() << std::endl;
         stream >> imageId;
         environmentLight.hdrTexture.BindImage(_images[imageId - 1]);
-
+        environmentLight.hdrTexture.interpolationType = InterpolationType::BILINEAR;
+        environmentLight.hdrTexture.normalizer = 1;
         _environmentLights.push_back(environmentLight);
         element = element->NextSiblingElement("SphericalDirectionalLight");
     }
@@ -397,10 +414,12 @@ inline void SceneReadLights(tinyxml2::XMLNode* root, std::vector<PointLight>& _p
         child = element->FirstChildElement("CoverageAngle");
         ss << child->GetText() << std::endl;
         ss >> spotLight.coverageAngle;
+        spotLight.coverageAngle = RADIANS(spotLight.coverageAngle);
 
         child = element->FirstChildElement("FalloffAngle");
         ss << child->GetText() << std::endl;
         ss >> spotLight.falloffAngle;
+        spotLight.falloffAngle = RADIANS(spotLight.falloffAngle);
 
         _spotLights.push_back(spotLight);
         element = element->NextSiblingElement("SpotLight");
@@ -1688,7 +1707,9 @@ inline void ScenePopulateObjects(std::vector<Object*>& _objects, std::vector<Mes
 inline void ScenePopulateLights(std::vector<Light*>& _lights,
                                 std::vector<PointLight>& _pointLights,
                                 std::vector<AreaLight>& _areaLights,
-                                std::vector<DirectionalLight>& _directionalLights)
+                                std::vector<DirectionalLight>& _directionalLights,
+                                std::vector<SpotLight>& _spotLights,
+                                std::vector<EnvironmentLight>& _environmentLights)
 {
     for(size_t i=0; i<_pointLights.size(); i++)
     {
@@ -1701,6 +1722,14 @@ inline void ScenePopulateLights(std::vector<Light*>& _lights,
     for(size_t i=0; i<_directionalLights.size(); i++)
     {
         _lights.push_back(&_directionalLights[i]);
+    }
+    for(size_t i=0; i<_spotLights.size(); i++)
+    {
+        _lights.push_back(&_spotLights[i]);
+    }
+    for(size_t i=0; i<_environmentLights.size(); i++)
+    {
+        _lights.push_back(&_environmentLights[i]);
     }
 }                                
 

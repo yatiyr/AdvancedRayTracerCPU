@@ -75,7 +75,7 @@ void Renderer::ToneMap(float* pixels, int width, int height)
         if(lum > max_lum)
             max_lum = lum;
 
-        av_lum = std::log(0.1 + lum);
+        av_lum += std::log(0.08 + lum);
     }
 
     av_lum = std::pow(EULER, av_lum/(width*height));
