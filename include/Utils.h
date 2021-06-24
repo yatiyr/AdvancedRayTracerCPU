@@ -12,6 +12,12 @@
 #include <happly.h>
 #include <map>
 
+#include <Light.h>
+#include <AreaLight.h>
+#include <DirectionalLight.h>
+#include <PointLight.h>
+
+
 const double EULER =  2.71828182845904523536;
 
 #ifndef M_PI
@@ -1677,6 +1683,25 @@ inline void ScenePopulateObjects(std::vector<Object*>& _objects, std::vector<Mes
     }            
 
 }
+
+inline void ScenePopulateLights(std::vector<Light*>& _lights,
+                                std::vector<PointLight>& _pointLights,
+                                std::vector<AreaLight>& _areaLights,
+                                std::vector<DirectionalLight>& _directionalLights)
+{
+    for(size_t i=0; i<_pointLights.size(); i++)
+    {
+        _lights.push_back(&_pointLights[i]);
+    }
+    for(size_t i=0; i<_areaLights.size(); i++)
+    {
+        _lights.push_back(&_areaLights[i]);
+    }
+    for(size_t i=0; i<_directionalLights.size(); i++)
+    {
+        _lights.push_back(&_directionalLights[i]);
+    }
+}                                
 
 inline float GaussianWeight(float x, float y, float stdDev)
 {

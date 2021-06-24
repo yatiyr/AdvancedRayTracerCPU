@@ -33,6 +33,7 @@ Scene::Scene(const std::string& filepath)
     SceneReadTriangles(root, _triangles, _textures, _vertexData, _texCoordData, _rotationMatrices, _scalingMatrices, _translationMatrices, _compositeMatrices);
 
     ScenePopulateObjects(_objectPointerVector, _meshes, _meshInstances, _spheres, _triangles);
+    ScenePopulateLights(_lightPointerVector, _pointLights, _areaLights, _directionalLights); // TODO: Spot Light and Environment lights will come
 
     _activeCamera = _cameras[0];
 
@@ -279,106 +280,21 @@ glm::vec3 Scene::ComputeDiffuseSpecular(const IntersectionReport& report, const 
 {
     glm::vec3 result = glm::vec3(0.0);
 
-    for(size_t i=0; i<_pointLights.size(); i++)
-    {
-        if(ShadowRayIntersection(0.0001, 2000, _intersectionTestEpsilon, _shadowRayEpsilon, _pointLights[i].position, report, true, ray.time))
-        {
-            continue;
-        }
-        else
-        {
-            glm::vec3 diffuseReflectance = _materials[report.materialId].diffuseReflectance;
-            glm::vec3 specularReflectance = _materials[report.materialId].specularReflectance;
-
-            if(report.diffuseActive)
-            {
-                if(report.replaceAll)
-                {
-                    return report.texDiffuseReflectance;
-                }
-                else if(report.texDiffuseKdMode == 1)
-                {
-                    diffuseReflectance = report.texDiffuseReflectance;
-                }
-                else if(report.texDiffuseKdMode == 2)
-                {
-                    diffuseReflectance = (diffuseReflectance + report.texDiffuseReflectance);
-                    diffuseReflectance.x /= 2;
-                    diffuseReflectance.y /= 2;
-                    diffuseReflectance.z /= 2;
-                }
-            }
-
-            if(report.specularActive)
-            {
-                if(report.texSpecularKdMode == 1)
-                {
-                    specularReflectance = report.texSpecularReflectance;
-                }
-                else if(report.texSpecularKdMode == 2)
-                {
-                    specularReflectance = (specularReflectance + report.texSpecularReflectance);
-                    specularReflectance.x /= 2;
-                    specularReflectance.y /= 2;
-                    specularReflectance.z /= 2;
-                }
-            }
-
-            // Add emisssion later
-            if(report.emissionActive)
-            {
-
-            }
-
-            float lightDistance = glm::length(_pointLights[i].position - report.intersection);
-            glm::vec3 wi = glm::normalize(_pointLights[i].position - report.intersection);
-
-            // Diffuse Calculation
-            result += diffuseReflectance *
-                    std::max(0.0f, glm::dot(wi, report.normal)) *
-                    (_pointLights[i].intensity / (lightDistance * lightDistance));
+    if(report.diffuseActive && report.replaceAll)
+        return report.texDiffuseReflectance;
 
 
-            // Specular Calculation
-            glm::vec3 h  = glm::normalize(wi - ray.direction);
+    glm::vec3 diffuseReflectance  = _materials[report.materialId].diffuseReflectance;
+    glm::vec3 specularReflectance = _materials[report.materialId].specularReflectance;
+    float phongExponent           = _materials[report.materialId].phongExponent;
 
-            result += specularReflectance *
-                    std::pow(std::max(0.0f, glm::dot(report.normal, h)), _materials[report.materialId].phongExponent) *
-                    (_pointLights[i].intensity / (lightDistance * lightDistance));
-        }
-    }
-
-    for(size_t i=0; i<_areaLights.size(); i++)
+    for(size_t i=0; i<_lightPointerVector.size(); i++)
     {
 
-        float randomOffsetU = areaLightPositionGenerator->Generate();
-        float randomOffsetV = areaLightPositionGenerator->Generate();
+        result += _lightPointerVector[i]->ComputeDiffuseSpecular(ray, diffuseReflectance, specularReflectance, phongExponent,
+                                                                 report, 0.0001, 2000, _intersectionTestEpsilon, _shadowRayEpsilon, 
+                                                                 true, ray.time, _objectPointerVector);
 
-        glm::vec3 randomPoint = _areaLights[i].position + _areaLights[i].extent*(randomOffsetU*_areaLights[i].u + randomOffsetV*_areaLights[i].v);
-
-        if(ShadowRayIntersection(0, 2000, _intersectionTestEpsilon, _shadowRayEpsilon, randomPoint, report, true, ray.time))
-        {
-            continue;
-        }
-        else
-        {
-            float lightDistance = glm::length(randomPoint - report.intersection);
-            glm::vec3 wi = glm::normalize(randomPoint - report.intersection);
-            glm::vec3 l = -wi;
-
-            // Diffuse Calculation
-            result += _materials[report.materialId].diffuseReflectance *
-                    std::max(0.0f, glm::dot(wi, report.normal)) *
-                    ((_areaLights[i].radiance * std::fabs(glm::dot(l, _areaLights[i].normal)) * _areaLights[i].extent * _areaLights[i].extent)/(lightDistance*lightDistance));
-            
-            // Specular Calculation
-            glm::vec3 h = glm::normalize(wi - ray.direction);
-
-            result += _materials[report.materialId].specularReflectance *
-                   std::pow(std::max(0.0f, glm::dot(report.normal, h)), _materials[report.materialId].phongExponent) *
-                   ((_areaLights[i].radiance * std::fabs(glm::dot(l, _areaLights[i].normal)) * _areaLights[i].extent * _areaLights[i].extent)/(lightDistance*lightDistance));
-
-        }
     }
 
     return result;

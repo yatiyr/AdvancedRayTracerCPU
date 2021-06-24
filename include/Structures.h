@@ -49,89 +49,6 @@ struct Camera
 
 };
 
-struct PointLight
-{
-    alignas(16) glm::vec3 position;
-    alignas(16) glm::vec3 intensity;
-};
-
-struct AreaLight
-{
-    alignas(16) glm::vec3 position;
-    alignas(16) glm::vec3 radiance;
-    alignas(16) glm::vec3 normal;
-    alignas(16) glm::vec3 u;
-    alignas(16) glm::vec3 v;
-    float extent;
-
-    AreaLight(glm::vec3 position, glm::vec3 radiance, glm::vec3 normal, float extent)
-    {
-        this->normal = normal;
-        this->position = position;
-        this->radiance = radiance;
-        this->extent = extent;
-
-        glm::vec3 nBar = normal;
-
-        float absX = std::fabs(nBar.x);
-        float absY = std::fabs(nBar.y);
-        float absZ = std::fabs(nBar.z);
-
-        if(absX <= absY && absX <= absZ)
-        {
-            nBar.x = 1.0f;
-        }
-        else if(absY <= absX && absY <= absZ)
-        {
-            nBar.y = 1.0f;
-        }
-        else if(absZ <= absX && absZ <= absY)
-        {
-            nBar.z = 1.0f;
-        }     
-
-        this->u = glm::normalize(glm::cross(nBar, normal));
-        this->v = glm::normalize(glm::cross(normal, u));
-
-    }
-};
-
-struct DirectionalLight
-{
-    alignas(16) glm::vec3 direction;
-    alignas(16) glm::vec3 radiance;
-};
-
-struct SphericalDirectionalLight
-{
-    Texture hdrTexture;
-};
-
-struct SpotLight
-{
-    alignas(16) glm::vec3 position;
-    alignas(16) glm::vec3 direction;
-    alignas(16) glm::vec3 intensity;
-
-    // Angles will be converted to radians
-    // while creating the struct
-    float coverageAngle;
-    float falloffAngle;
-    float exponent = 4;
-
-
-    float GetFollowFactor(float theta)
-    {
-        return std::pow((theta - std::cos(coverageAngle/2))/
-                        (std::cos(falloffAngle/2) - std::cos(coverageAngle/2)),exponent);
-    }
-
-    glm::vec3 GetL(glm::vec3 position)
-    {
-
-    }
-};
-
 struct Material
 {
     alignas(16) glm::vec3 ambientReflectance;
@@ -219,6 +136,36 @@ struct OrthonormalBasis
 {
     alignas(16) glm::vec3 u;
     alignas(16) glm::vec3 v;
+};
+
+struct SphericalDirectionalLight
+{
+    Texture hdrTexture;
+};
+
+struct SpotLight
+{
+    alignas(16) glm::vec3 position;
+    alignas(16) glm::vec3 direction;
+    alignas(16) glm::vec3 intensity;
+
+    // Angles will be converted to radians
+    // while creating the struct
+    float coverageAngle;
+    float falloffAngle;
+    float exponent = 4;
+
+
+    float GetFollowFactor(float theta)
+    {
+        return std::pow((theta - std::cos(coverageAngle/2))/
+                        (std::cos(falloffAngle/2) - std::cos(coverageAngle/2)),exponent);
+    }
+
+    glm::vec3 GetL(glm::vec3 position)
+    {
+
+    }
 };
 
 #endif

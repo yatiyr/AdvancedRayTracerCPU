@@ -31,6 +31,12 @@
 
 #include <Texture.h>
 
+#include <Light.h>
+#include <AreaLight.h>
+#include <DirectionalLight.h>
+#include <PointLight.h>
+// TODO: SPOT LIGHT AND ENVIRONMENT LIGHTS WILL COME
+
 struct WorkGroup
 {
     int start;
@@ -102,6 +108,8 @@ private:
     std::vector<SphericalDirectionalLight> _environmentLights;
     std::vector<DirectionalLight> _directionalLights;
     std::vector<SpotLight> _spotLights;
+
+    std::vector<Light*> _lightPointerVector;
 
     std::vector<Material>   _materials;
     std::vector<Camera>     _cameras;
