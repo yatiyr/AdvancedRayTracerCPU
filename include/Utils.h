@@ -158,7 +158,10 @@ inline void SceneReadCameras(tinyxml2::XMLNode* root, std::vector<Camera>& _came
             glm::vec3 w = -glm::normalize(camera.gaze);
             camera.v = glm::normalize(glm::cross(camera.up, w));    
             camera.up   = glm::normalize(glm::cross(w, camera.v));
-            camera.nearPlane = glm::vec4(l,r,b,t);            
+            camera.nearPlane = glm::vec4(l,r,b,t);
+
+            if(element->Attribute("handedness") && strcmp(element->Attribute("handedness"), "left") == 0)
+                camera.v = -camera.v;                 
         }
         else
         {
@@ -213,10 +216,10 @@ inline void SceneReadCameras(tinyxml2::XMLNode* root, std::vector<Camera>& _came
             if(element)
             {
                 if(std::strcmp(element->GetText(), "Photographic") == 0)
-                    camera.tmo = TMO::PHOTOHRAPHIC;
+                    camera.tmo = TMO::PHOTOGRAPHIC;
             }
             else
-                camera.tmo = TMO::PHOTOHRAPHIC;
+                camera.tmo = TMO::PHOTOGRAPHIC;
 
             element = child->FirstChildElement("TMOOptions");
             if(element)
@@ -515,6 +518,19 @@ inline void SceneReadMaterials(tinyxml2::XMLNode* root, std::vector<Material>& _
         stream >> material.roughness;
 
         material.type = -1;
+
+        if(element->Attribute("degamma"))
+        {
+            const char* degammaFlag = element->Attribute("degamma");
+            if(strcmp(degammaFlag, "true") == 0)
+            {
+                material.degammaFlag = true;
+            }
+            else
+                material.degammaFlag = false;
+        }
+        else
+            material.degammaFlag = false;
 
         if(element->Attribute("type"))
         {

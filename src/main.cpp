@@ -3,7 +3,10 @@
 
 int main(int argc, char** argv)
 {
-    Renderer RnDr("assets/scenes/head_env_light.xml");
+
+    std::string path = std::string(argv[1]);
+
+    Renderer RnDr(path);
 
     try
     {    

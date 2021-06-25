@@ -26,7 +26,7 @@ public:
     glm::vec3 ComputeDiffuseSpecular(const Ray& ray, glm::vec3& diffuseReflectance, glm::vec3& specularReflectance,
                                      const float& phongExponent, const IntersectionReport& report,
                                      float tmin, float tmax, float intersectionTestEpsilon, float shadowRayEpsilon,
-                                     bool backfaceCulling, float time, std::vector<Object *>& objectPointerVector);
+                                     bool backfaceCulling, float time, std::vector<Object *>& objectPointerVector, float gamma);
 
     
 };

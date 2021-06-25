@@ -17,9 +17,7 @@ private:
     Scene scene;
 
 
-    float keyValue;
     float contrast;
-    float gamma;
     float brightness;
 
 
@@ -38,6 +36,7 @@ public:
     void SetConstrast(float val);
     void SetGamma(float val);
     void SetBrightness(float val);
+    void SetSaturation(float val);
 
 };
 

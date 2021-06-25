@@ -13,7 +13,7 @@
 
 enum TMO
 {
-    PHOTOHRAPHIC = 0
+    PHOTOGRAPHIC = 0
 };
 
 enum RenderMode
@@ -40,7 +40,7 @@ struct Camera
     RenderMode renderMode = RenderMode::CLASSIC;    
 
     // Tone Map values  
-    TMO tmo = TMO::PHOTOHRAPHIC;
+    TMO tmo = TMO::PHOTOGRAPHIC;
     float keyValue = 0.18;
     float burn_percentage = 1.0;
     float saturation = 1.0;
@@ -61,6 +61,8 @@ struct Material
     float refractionIndex;
     float absorptionIndex;
     float roughness;
+
+    bool degammaFlag;
 };
 
 struct Vertex

@@ -273,7 +273,22 @@ bool Scene::ShadowRayIntersection(float tmin, float tmax, float intersectionTest
 
 glm::vec3 Scene::ComputeAmbientComponent(const IntersectionReport& report)
 {
-    return _ambientLight * _materials[report.materialId].ambientReflectance;
+    bool gammaflag = _materials[report.materialId].degammaFlag;
+
+    if(!gammaflag)
+        return _ambientLight * _materials[report.materialId].ambientReflectance;
+    else
+    {
+        glm::vec3 aR = _materials[report.materialId].ambientReflectance;
+
+        aR.x = std::pow(_materials[report.materialId].ambientReflectance.x,_activeCamera.gamma);
+        aR.y = std::pow(_materials[report.materialId].ambientReflectance.y,_activeCamera.gamma);
+        aR.z = std::pow(_materials[report.materialId].ambientReflectance.z,_activeCamera.gamma);
+
+        return _ambientLight * aR;        
+       
+    }
+
 }
 
 glm::vec3 Scene::ComputeDiffuseSpecular(const IntersectionReport& report, const Ray& ray)
@@ -287,13 +302,22 @@ glm::vec3 Scene::ComputeDiffuseSpecular(const IntersectionReport& report, const 
     glm::vec3 diffuseReflectance  = _materials[report.materialId].diffuseReflectance;
     glm::vec3 specularReflectance = _materials[report.materialId].specularReflectance;
     float phongExponent           = _materials[report.materialId].phongExponent;
+    bool gammaflag = _materials[report.materialId].degammaFlag;
 
     for(size_t i=0; i<_lightPointerVector.size(); i++)
     {
 
-        result += _lightPointerVector[i]->ComputeDiffuseSpecular(ray, diffuseReflectance, specularReflectance, phongExponent,
+        if(gammaflag)
+        {
+            result += _lightPointerVector[i]->ComputeDiffuseSpecular(ray, diffuseReflectance, specularReflectance, phongExponent,
                                                                  report, 0.00001, 2000, _intersectionTestEpsilon, _shadowRayEpsilon, 
-                                                                 true, ray.time, _objectPointerVector);
+                                                                 true, ray.time, _objectPointerVector, _activeCamera.gamma);
+        }
+        else
+            result += _lightPointerVector[i]->ComputeDiffuseSpecular(ray, diffuseReflectance, specularReflectance, phongExponent,
+                                                                 report, 0.00001, 2000, _intersectionTestEpsilon, _shadowRayEpsilon, 
+                                                                 true, ray.time, _objectPointerVector, 0);            
+        
 
     }
 
@@ -323,8 +347,11 @@ RayTraceResult Scene::RayTrace(const Ray& ray, bool backfaceCulling)
     IntersectionReport r;
     if(TestWorldIntersection(ray, r, 0, 2000, _intersectionTestEpsilon, backfaceCulling))
     {
-        glm::vec3 pixel(0.0);        
-        pixel += ComputeAmbientComponent(r) + ComputeDiffuseSpecular(r, ray) + RecursiveTrace(ray, r, 0, false);
+        glm::vec3 pixel(0.0);
+        if(r.diffuseActive && r.replaceAll)
+            pixel = r.texDiffuseReflectance;
+        else
+            pixel += ComputeAmbientComponent(r) + ComputeDiffuseSpecular(r, ray) + RecursiveTrace(ray, r, 0, false);
         
         result.resultColor = pixel;
         result.hit = true;

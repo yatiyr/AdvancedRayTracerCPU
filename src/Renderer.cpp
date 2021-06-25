@@ -2,10 +2,8 @@
 
 Renderer::Renderer(const std::string& filepath) : scene(std::string(ROOT_DIR) + filepath)
 {
-    keyValue   = 0.18;
     contrast   = 0.5;
     brightness = 0.5;
-    gamma      = 2.2;
 }
 
 Renderer::~Renderer()
@@ -13,19 +11,9 @@ Renderer::~Renderer()
 
 }
 
-void Renderer::SetKeyValue(float val)
-{
-    keyValue = val;
-}
-
 void Renderer::SetConstrast(float val)
 {
     contrast = val;
-}
-
-void Renderer::SetGamma(float val)
-{
-    gamma = val;
 }
 
 void Renderer::SetBrightness(float val)
@@ -60,7 +48,6 @@ uint8_t* Renderer::GiveResult(float* pixels, int width, int height)
 void Renderer::ToneMap(float* pixels, int width, int height)
 {
     float av_lum = 0;
-
     float max_lum = 0;
 
     for(int i=0; i<width*height; i++)
@@ -70,23 +57,37 @@ void Renderer::ToneMap(float* pixels, int width, int height)
         float b = pixels[i*3 + 2];
 
 
-        float lum =  r*0.3 + g*0.59 + b*0.11;
+        float lum =  r*0.27 + g*0.67 + b*0.06;
 
         if(lum > max_lum)
             max_lum = lum;
 
-        av_lum += std::log(0.08 + lum);
-    }
 
-    av_lum = std::pow(EULER, av_lum/(width*height));
+
+        av_lum += std::log(0.000005 + lum);
+    }
+    max_lum = scene._activeCamera.burn_percentage * av_lum / 100;
+    av_lum = std::pow(EULER, av_lum/(width*height));       
 
     for(int i=0; i<width*height; i++)
     {
-        // Luminance mapping
-        pixels[i*3]     = (scene._activeCamera.keyValue * pixels[i*3])/av_lum;
-        pixels[i*3 + 1] = (scene._activeCamera.keyValue * pixels[i*3 + 1])/av_lum;
-        pixels[i*3 + 2] = (scene._activeCamera.keyValue * pixels[i*3 + 2])/av_lum;
+        float r = pixels[i*3];
+        float g = pixels[i*3 + 1];
+        float b = pixels[i*3 + 2];
+       
+        float lum = r*0.27 + g*0.67 + b*0.06;
 
+        float lm = (scene._activeCamera.keyValue * lum)/av_lum;
+
+        float ld = lm *(1 + (lm/(max_lum*max_lum))/(scene._activeCamera.saturation + lm));
+
+        //ld = std::clamp(ld, (float)0, (float)1);
+                      
+ 
+        // Luminance mapping
+        pixels[i*3]     = ld * pixels[i*3] / lum;
+        pixels[i*3 + 1] = ld * pixels[i*3 + 1] / lum;
+        pixels[i*3 + 2] = ld * pixels[i*3 + 2] / lum;
         // Sigmoidal compression
 
         // Sigmoid 1
@@ -95,15 +96,26 @@ void Renderer::ToneMap(float* pixels, int width, int height)
         //pixels[i*3 + 2] = pixels[i*3 + 2]/(pixels[i*3 + 2] + 1);
 
         // Sigmoid 2
-        pixels[i*3] = (pixels[i*3]*(1 + pixels[i*3]/(max_lum*max_lum)))/(1 + pixels[i*3]);
-        pixels[i*3 + 1] = (pixels[i*3 + 1]*(1 + pixels[i*3 + 1]/(max_lum*max_lum)))/(1 + pixels[i*3 + 1]);
-        pixels[i*3 + 2] = (pixels[i*3 + 2]*(1 + pixels[i*3 + 2]/(max_lum*max_lum)))/(1 + pixels[i*3 + 2]);                
+        //pixels[i*3] = (pixels[i*3]*(1 + pixels[i*3]/(max_lum*max_lum)))/(1 + pixels[i*3]);
+        //pixels[i*3 + 1] = (pixels[i*3 + 1]*(1 + pixels[i*3 + 1]/(max_lum*max_lum)))/(1 + pixels[i*3 + 1]);
+        //pixels[i*3 + 2] = (pixels[i*3 + 2]*(1 + pixels[i*3 + 2]/(max_lum*max_lum)))/(1 + pixels[i*3 + 2]);                
 
+        //pixels[i*3] = ld_r;
+        //pixels[i*3 + 1] = ld_g;
+        //pixels[i*3 + 2] = ld_b;
+
+        pixels[i*3]     = (std::pow((pixels[i*3]), 1/scene._activeCamera.gamma));
+        pixels[i*3 + 1] = (std::pow((pixels[i*3 + 1]), 1/scene._activeCamera.gamma));
+        pixels[i*3 + 2] = (std::pow((pixels[i*3 + 2]), 1/scene._activeCamera.gamma));           
 
         // gamma correction and scaling to [0, 255] range
-        pixels[i*3]     = 255 * (std::pow((pixels[i*3]), 1/scene._activeCamera.gamma));
-        pixels[i*3 + 1] = 255 * (std::pow((pixels[i*3 + 1]), 1/scene._activeCamera.gamma));
-        pixels[i*3 + 2] = 255 * (std::pow((pixels[i*3 + 2]), 1/scene._activeCamera.gamma));
+        pixels[i*3]     *= 255 ;//* (std::pow((pixels[i*3]), scene._activeCamera.gamma));
+        pixels[i*3 + 1] *= 255 ;//* (std::pow((pixels[i*3 + 1]), scene._activeCamera.gamma));
+        pixels[i*3 + 2] *= 255 ;//* (std::pow((pixels[i*3 + 2]), scene._activeCamera.gamma));
+
+        pixels[i*3]     = clamp(pixels[i*3], (float)0, (float)255);
+        pixels[i*3 + 1] = clamp(pixels[i*3 + 1], (float)0, (float)255);
+        pixels[i*3 + 2] = clamp(pixels[i*3 + 2], (float)0, (float)255);
 
     }
 
