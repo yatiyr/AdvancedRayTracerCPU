@@ -47,39 +47,42 @@ uint8_t* Renderer::GiveResult(float* pixels, int width, int height)
 
 void Renderer::ToneMap(float* pixels, int width, int height)
 {
-    float av_lum = 0;
-    float max_lum = 0;
+    long double av_lum = 0;
+    double max_lum = 0;
 
     for(int i=0; i<width*height; i++)
     {
-        float r = pixels[i*3];
-        float g = pixels[i*3 + 1];
-        float b = pixels[i*3 + 2];
+        double r = pixels[i*3];
+        double g = pixels[i*3 + 1];
+        double b = pixels[i*3 + 2];
 
 
-        float lum =  r*0.27 + g*0.67 + b*0.06;
+        double lum =  r*0.27 + g*0.67 + b*0.06;
 
         if(lum > max_lum)
             max_lum = lum;
 
 
 
-        av_lum += std::log(0.000005 + lum);
+        av_lum += std::log(0.00005 + lum);
+
     }
+
     max_lum = scene._activeCamera.burn_percentage * av_lum / 100;
     av_lum = std::pow(EULER, av_lum/(width*height));       
 
     for(int i=0; i<width*height; i++)
     {
-        float r = pixels[i*3];
-        float g = pixels[i*3 + 1];
-        float b = pixels[i*3 + 2];
+        double r = pixels[i*3];
+        double g = pixels[i*3 + 1];
+        double b = pixels[i*3 + 2];
+
        
-        float lum = r*0.27 + g*0.67 + b*0.06;
+        double lum = r*0.27 + g*0.67 + b*0.06;
 
-        float lm = (scene._activeCamera.keyValue * lum)/av_lum;
+        double lm = (scene._activeCamera.keyValue * lum)/av_lum;
 
-        float ld = lm *(1 + (lm/(max_lum*max_lum))/(scene._activeCamera.saturation + lm));
+        double ld = lm *(1 + (lm/(max_lum*max_lum))/(scene._activeCamera.saturation + lm));
 
         //ld = std::clamp(ld, (float)0, (float)1);
                       
@@ -112,6 +115,7 @@ void Renderer::ToneMap(float* pixels, int width, int height)
         pixels[i*3]     *= 255 ;//* (std::pow((pixels[i*3]), scene._activeCamera.gamma));
         pixels[i*3 + 1] *= 255 ;//* (std::pow((pixels[i*3 + 1]), scene._activeCamera.gamma));
         pixels[i*3 + 2] *= 255 ;//* (std::pow((pixels[i*3 + 2]), scene._activeCamera.gamma));
+
 
         pixels[i*3]     = clamp(pixels[i*3], (float)0, (float)255);
         pixels[i*3 + 1] = clamp(pixels[i*3 + 1], (float)0, (float)255);

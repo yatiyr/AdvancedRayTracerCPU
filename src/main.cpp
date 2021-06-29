@@ -4,7 +4,7 @@
 int main(int argc, char** argv)
 {
 
-    std::string path = std::string(argv[1]);
+    std::string path = std::string("assets/scenes/levitating_dragon.xml");
 
     Renderer RnDr(path);
 

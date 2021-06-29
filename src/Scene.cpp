@@ -420,6 +420,7 @@ glm::vec3 Scene::TraceAndFilter(std::vector<RayWithWeigth> rwwVector, int x, int
 
     }
 
+
     result.x = weightedSum.x / totalWeight.x;
     result.y = weightedSum.y / totalWeight.y;
     result.z = weightedSum.z / totalWeight.z;
@@ -446,9 +447,10 @@ glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, in
     if(ray.materialIdCurrentlyIn != -1)
     {
         float dist = glm::length(ray.origin - iR.intersection);
-        attenuation.x = std::pow((float)EULER, -_materials[ray.materialIdCurrentlyIn].absorptionCoefficient.x *dist);
-        attenuation.y = std::pow((float)EULER, -_materials[ray.materialIdCurrentlyIn].absorptionCoefficient.y *dist);
-        attenuation.z = std::pow((float)EULER, -_materials[ray.materialIdCurrentlyIn].absorptionCoefficient.z *dist);                                
+        attenuation.x = std::pow((float)EULER, std::log(_materials[ray.materialIdCurrentlyIn].absorptionCoefficient.x) *dist);
+        attenuation.y = std::pow((float)EULER, std::log(_materials[ray.materialIdCurrentlyIn].absorptionCoefficient.y) *dist);
+        attenuation.z = std::pow((float)EULER, std::log(_materials[ray.materialIdCurrentlyIn].absorptionCoefficient.z) *dist);
+                       
     }
 
     // Mirror
@@ -480,6 +482,23 @@ glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, in
                                                                          ComputeDiffuseSpecular(report, reflected) +
                                                                          RecursiveTrace(reflected, report, bounce + 1, backfaceCulling));
         }
+        else if(_environmentLights.size() > 0)
+        {
+            glm::vec3 l = reflected.direction;
+            glm::vec3 v = glm::vec3(0.0, 1.0, 0.0);
+            glm::vec3 u = glm::vec3(1.0, 0.0, 0.0);
+            glm::vec3 w = glm::vec3(0.0, 0.0, 1.0);
+
+            float theta = std::acos(glm::dot(l,v));
+            float phi   = std::atan2(glm::dot(l,w), glm::dot(l,u));
+
+            float tU = (-phi + M_PI) / (2 * M_PI);
+            float tV = theta / M_PI;
+
+            glm::vec3 envColor = _environmentLights[0].hdrTexture.Fetch(tU, tV);
+            result += attenuation * _materials[iR.materialId].mirrorReflectance * envColor;
+              
+        }         
     }
 
     // Dielectric
@@ -534,11 +553,46 @@ glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, in
                 {
                     result += reflectionRatio * (ComputeAmbientComponent(report) + ComputeDiffuseSpecular(report, reflected) + RecursiveTrace(reflected, report, bounce + 1, backfaceCulling));
                 }
+                else if(_environmentLights.size() > 0)
+                {
+                    glm::vec3 l = reflected.direction;
+                    glm::vec3 v = glm::vec3(0.0, 1.0, 0.0);
+                    glm::vec3 u = glm::vec3(1.0, 0.0, 0.0);
+                    glm::vec3 w = glm::vec3(0.0, 0.0, 1.0);
+
+                    float theta = std::acos(glm::dot(l,v));
+                    float phi   = std::atan2(glm::dot(l,w), glm::dot(l,u));
+
+                    float tU = (-phi + M_PI) / (2 * M_PI);
+                    float tV = theta / M_PI;
+
+                    glm::vec3 envColor = _environmentLights[0].hdrTexture.Fetch(tU, tV);
+                    result += reflectionRatio * envColor;
+                    
+                }
+
                 IntersectionReport report2;
                 if(TestWorldIntersection(tRay, report2, 0, 2000, _intersectionTestEpsilon, backfaceCulling))
                 {
-                    result += transmissionRatio * (RecursiveTrace(tRay, report2, bounce + 1, backfaceCulling));
+                    result += attenuation * transmissionRatio * (RecursiveTrace(tRay, report2, bounce + 1, backfaceCulling));
                 }
+                else if(_environmentLights.size() > 0)
+                {
+                    glm::vec3 l = tRay.direction;
+                    glm::vec3 v = glm::vec3(0.0, 1.0, 0.0);
+                    glm::vec3 u = glm::vec3(1.0, 0.0, 0.0);
+                    glm::vec3 w = glm::vec3(0.0, 0.0, 1.0);
+
+                    float theta = std::acos(glm::dot(l,v));
+                    float phi   = std::atan2(glm::dot(l,w), glm::dot(l,u));
+
+                    float tU = (-phi + M_PI) / (2 * M_PI);
+                    float tV = theta / M_PI;
+
+                    glm::vec3 envColor = _environmentLights[0].hdrTexture.Fetch(tU, tV);
+                    result += transmissionRatio * envColor;
+                    
+                }                
 
             }
             // Only reflection occurs
@@ -556,7 +610,24 @@ glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, in
                 {
                     result += (ComputeDiffuseSpecular(report, reflected) +
                                                                RecursiveTrace(reflected, report, bounce + 1, backfaceCulling));
-                }                
+                }
+                else if(_environmentLights.size() > 0)
+                {
+                    glm::vec3 l = reflected.direction;
+                    glm::vec3 v = glm::vec3(0.0, 1.0, 0.0);
+                    glm::vec3 u = glm::vec3(1.0, 0.0, 0.0);
+                    glm::vec3 w = glm::vec3(0.0, 0.0, 1.0);
+
+                    float theta = std::acos(glm::dot(l,v));
+                    float phi   = std::atan2(glm::dot(l,w), glm::dot(l,u));
+
+                    float tU = (-phi + M_PI) / (2 * M_PI);
+                    float tV = theta / M_PI;
+
+                    glm::vec3 envColor = _environmentLights[0].hdrTexture.Fetch(tU, tV);
+                    result += envColor;
+                    
+                }                                 
             }            
         }
 
@@ -612,11 +683,46 @@ glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, in
                 {
                     result += reflectionRatio * attenuation * (RecursiveTrace(reflected, report, bounce + 1, backfaceCulling));
                 }
+                else if(_environmentLights.size() > 0)
+                {
+                    glm::vec3 l = reflected.direction;
+                    glm::vec3 v = glm::vec3(0.0, 1.0, 0.0);
+                    glm::vec3 u = glm::vec3(1.0, 0.0, 0.0);
+                    glm::vec3 w = glm::vec3(0.0, 0.0, 1.0);
+
+                    float theta = std::acos(glm::dot(l,v));
+                    float phi   = std::atan2(glm::dot(l,w), glm::dot(l,u));
+
+                    float tU = (-phi + M_PI) / (2 * M_PI);
+                    float tV = theta / M_PI;
+
+                    glm::vec3 envColor = _environmentLights[0].hdrTexture.Fetch(tU, tV);
+                    result += reflectionRatio * attenuation * envColor;
+                    
+                }
+
                 IntersectionReport report2;
                 if(TestWorldIntersection(tRay, report2, 0, 2000, _intersectionTestEpsilon, backfaceCulling))
                 {
                     result += transmissionRatio * attenuation * (ComputeAmbientComponent(report2) + ComputeDiffuseSpecular(report2, tRay) + RecursiveTrace(tRay, report2, bounce + 1, backfaceCulling));
                 }
+                else if(_environmentLights.size() > 0)
+                {
+                    glm::vec3 l = tRay.direction;
+                    glm::vec3 v = glm::vec3(0.0, 1.0, 0.0);
+                    glm::vec3 u = glm::vec3(1.0, 0.0, 0.0);
+                    glm::vec3 w = glm::vec3(0.0, 0.0, 1.0);
+
+                    float theta = std::acos(glm::dot(l,v));
+                    float phi   = std::atan2(glm::dot(l,w), glm::dot(l,u));
+
+                    float tU = (-phi + M_PI) / (2 * M_PI);
+                    float tV = theta / M_PI;
+
+                    glm::vec3 envColor = _environmentLights[0].hdrTexture.Fetch(tU, tV);
+                    result += transmissionRatio * attenuation * envColor;
+                    
+                }                
 
             }
             // Only reflection occurs
@@ -633,7 +739,24 @@ glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, in
                 if(TestWorldIntersection(reflected, report, 0, 2000, _intersectionTestEpsilon, backfaceCulling))
                 {
                     result += attenuation * (RecursiveTrace(reflected, report, bounce + 1, backfaceCulling));
-                }                
+                }
+                else if(_environmentLights.size() > 0)
+                {
+                    glm::vec3 l = reflected.direction;
+                    glm::vec3 v = glm::vec3(0.0, 1.0, 0.0);
+                    glm::vec3 u = glm::vec3(1.0, 0.0, 0.0);
+                    glm::vec3 w = glm::vec3(0.0, 0.0, 1.0);
+
+                    float theta = std::acos(glm::dot(l,v));
+                    float phi   = std::atan2(glm::dot(l,w), glm::dot(l,u));
+
+                    float tU = (-phi + M_PI) / (2 * M_PI);
+                    float tV = theta / M_PI;
+
+                    glm::vec3 envColor = _environmentLights[0].hdrTexture.Fetch(tU, tV);
+                    result += attenuation * envColor;
+                    
+                }                             
             } 
         } 
 
@@ -675,7 +798,25 @@ glm::vec3 Scene::RecursiveTrace(const Ray& ray, const IntersectionReport& iR, in
             result += attenuation * reflectionRatio * _materials[iR.materialId].mirrorReflectance * (
                                                                          ComputeDiffuseSpecular(report, reflected) +
                                                                          RecursiveTrace(reflected, report, bounce + 1, backfaceCulling));
-        }        
+        }
+        else if(_environmentLights.size() > 0)
+        {
+            glm::vec3 l = reflected.direction;
+            glm::vec3 v = glm::vec3(0.0, 1.0, 0.0);
+            glm::vec3 u = glm::vec3(1.0, 0.0, 0.0);
+            glm::vec3 w = glm::vec3(0.0, 0.0, 1.0);
+
+            float theta = std::acos(glm::dot(l,v));
+            float phi   = std::atan2(glm::dot(l,w), glm::dot(l,u));
+
+            float tU = (-phi + M_PI) / (2 * M_PI);
+            float tV = theta / M_PI;
+
+            glm::vec3 envColor = _environmentLights[0].hdrTexture.Fetch(tU, tV);
+            result += attenuation *  _materials[iR.materialId].mirrorReflectance * envColor;
+                    
+        }          
+              
     }
 
     return result;

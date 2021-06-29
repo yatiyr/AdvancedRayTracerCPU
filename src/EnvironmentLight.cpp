@@ -87,6 +87,7 @@ glm::vec3 EnvironmentLight::ComputeDiffuseSpecular(const Ray& ray, glm::vec3& di
         }  
 
         // Diffuse Calculation
+        
         result += diffuseReflectance * 
                 std::max(0.0f, glm::dot(wi, report.normal)) *
                 (radiance);

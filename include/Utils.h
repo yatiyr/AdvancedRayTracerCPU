@@ -368,6 +368,7 @@ inline void SceneReadLights(tinyxml2::XMLNode* root, std::vector<PointLight>& _p
         environmentLight.hdrTexture.BindImage(_images[imageId - 1]);
         environmentLight.hdrTexture.interpolationType = InterpolationType::BILINEAR;
         environmentLight.hdrTexture.normalizer = 1;
+        environmentLight.hdrTexture.type = TextureType::IMAGE;
         _environmentLights.push_back(environmentLight);
         element = element->NextSiblingElement("SphericalDirectionalLight");
     }
