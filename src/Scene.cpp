@@ -345,6 +345,8 @@ RayTraceResult Scene::RayTrace(const Ray& ray, bool backfaceCulling)
 
     RayTraceResult result;
     IntersectionReport r;
+    bool flag = false;
+
     if(TestWorldIntersection(ray, r, 0, 2000, _intersectionTestEpsilon, backfaceCulling))
     {
         glm::vec3 pixel(0.0);
@@ -353,6 +355,10 @@ RayTraceResult Scene::RayTrace(const Ray& ray, bool backfaceCulling)
         else
             pixel += ComputeAmbientComponent(r) + ComputeDiffuseSpecular(r, ray) + RecursiveTrace(ray, r, 0, false);
         
+        if(std::isnan(pixel.x))
+        {
+            pixel = glm::vec3(0.0,0.0,0.0);
+        }
         result.resultColor = pixel;
         result.hit = true;
         return result;
@@ -367,7 +373,7 @@ RayTraceResult Scene::RayTrace(const Ray& ray, bool backfaceCulling)
 glm::vec3 Scene::TraceAndFilter(std::vector<RayWithWeigth> rwwVector, int x, int y)
 {
     float stdDev = 1.f/6.f;
-    glm::vec3 result;
+    glm::vec3 result(0.0);
 
     glm::vec3 weightedSum(0.f);
     glm::vec3 totalWeight(0.f);
@@ -420,10 +426,9 @@ glm::vec3 Scene::TraceAndFilter(std::vector<RayWithWeigth> rwwVector, int x, int
 
     }
 
-
     result.x = weightedSum.x / totalWeight.x;
     result.y = weightedSum.y / totalWeight.y;
-    result.z = weightedSum.z / totalWeight.z;
+    result.z = weightedSum.z / totalWeight.z;  
 
     return glm::clamp(result, glm::vec3(0.f), glm::vec3(FLT_MAX));
     

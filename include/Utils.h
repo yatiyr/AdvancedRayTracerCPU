@@ -1059,39 +1059,65 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
             if(child->Attribute("textureOffset"))
                 textureOffset = std::stoi(child->Attribute("textureOffset"));
 
-            for(size_t i=0; i<_vertexData.size(); i++)
-            {
-                normals.push_back(glm::vec3(0.0));
-                neighborCount.push_back(0);
-            }
-
 
             while(!(stream >> indices.a).eof())
             {
                 stream >> indices.b >> indices.c;
-
                 indexVector.push_back(indices);
-
-                glm::vec3 a = _vertexData[indices.a + vertexOffset - 1];
-                glm::vec3 b = _vertexData[indices.b + vertexOffset - 1];
-                glm::vec3 c = _vertexData[indices.c + vertexOffset - 1];            
-                
-
-                glm::vec3 normal = glm::normalize(glm::cross((b-a), (c-a)));
-
-                normals[indices.a + vertexOffset - 1] += normal;
-                normals[indices.b + vertexOffset - 1] += normal;
-                normals[indices.c + vertexOffset - 1] += normal;
-
-                neighborCount[indices.a + vertexOffset - 1] += 1;
-                neighborCount[indices.b + vertexOffset - 1] += 1;
-                neighborCount[indices.c + vertexOffset - 1] += 1;
-
             }
 
-            for(size_t i=0; i<normals.size(); i++)
+            for(size_t i=0; i<_vertexData.size(); i++)
             {
-                normals[i] /= neighborCount[i];
+                normals.push_back(glm::vec3(0.0));
+                neighborCount.push_back(1);
+            }
+
+            for(size_t i=0; i<indexVector.size(); i++)
+            {
+                glm::vec3 a = _vertexData[indexVector[i].a + vertexOffset - 1];
+                glm::vec3 b = _vertexData[indexVector[i].b + vertexOffset - 1];
+                glm::vec3 c = _vertexData[indexVector[i].c + vertexOffset - 1];            
+
+                glm::vec3 ba = 10.f*(b-a);
+                glm::vec3 ca = 10.f*(c-a); 
+
+                if(ba == glm::vec3(0.0))               
+                    ba = glm::vec3(0.0001, 0.0001, 0.0001);
+
+                if(ca == glm::vec3(0.0))
+                    ca = glm::vec3(-0.0001, 0.0001, 0.0001);
+
+                if(ba == ca)
+                    ca += glm::vec3(0.00001, 0.00001, 0.00001);
+
+                glm::vec3 normal = glm::normalize(glm::cross((ba), (ca)));
+
+                normals[indexVector[i].a + vertexOffset - 1] += normal;
+                normals[indexVector[i].b + vertexOffset - 1] += normal;
+                normals[indexVector[i].c + vertexOffset - 1] += normal;
+
+                neighborCount[indexVector[i].a + vertexOffset - 1] += 1;
+                neighborCount[indexVector[i].b + vertexOffset - 1] += 1;
+                neighborCount[indexVector[i].c + vertexOffset - 1] += 1;                
+
+                if(i == 3165)
+                    int adsasd = 0;
+
+                if(indexVector[i].a == 2476 || indexVector[i].b == 2476 || indexVector[i].c == 2476)
+                    int bbb = 0;
+            }
+
+            for(size_t i=0; i<indexVector.size(); i++)
+            {
+                if(i == 3165)
+                    int adsasd = 0;
+
+                if(indexVector[i].a == 152 || indexVector[i].b == 152 || indexVector[i].c == 152)
+                    int bbb = 0;
+
+                normals[indexVector[i].a + vertexOffset - 1] /= neighborCount[indexVector[i].a + vertexOffset - 1];
+                normals[indexVector[i].b + vertexOffset - 1] /= neighborCount[indexVector[i].b + vertexOffset - 1];
+                normals[indexVector[i].c + vertexOffset - 1] /= neighborCount[indexVector[i].c + vertexOffset - 1];
             }
 
 
@@ -1102,6 +1128,10 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
                 glm::vec3 b = _vertexData[indexVector[i].b + vertexOffset - 1];                
                 glm::vec3 c = _vertexData[indexVector[i].c + vertexOffset - 1];                
 
+                if(std::isnan(normals[indexVector[i].a + vertexOffset - 1].x) && i != 0 && i != 1)
+                {
+                    int asdasddsa = 1;
+                }
                 Triangle tri(a, b, c, normals[indexVector[i].a + vertexOffset - 1], normals[indexVector[i].b + vertexOffset - 1], normals[indexVector[i].c + vertexOffset - 1]);
 
                 if(_texCoordData.size() > indexVector[i].a + textureOffset - 1)
