@@ -45,7 +45,7 @@ bool EnvironmentLight::ShadowRayIntersection(float tmin, float tmax, float inter
 glm::vec3 EnvironmentLight::ComputeDiffuseSpecular(const Ray& ray, glm::vec3& diffuseReflectance, glm::vec3& specularReflectance,
                                                    const float& phongExponent, const IntersectionReport& report,
                                                    float tmin, float tmax, float intersectionTestEpsilon, float shadowRayEpsilon,
-                                                   bool backfaceCulling, float time, std::vector<Object *>& objectPointerVector, float gamma)
+                                                   bool backfaceCulling, float time, std::vector<Object *>& objectPointerVector, float gamma, bool hasBRDF, BRDF brdf, float refractiveIndex, float absorbtionIndex)
 {
     RejectionSampling(report.normal);
     float theta = std::acos(glm::dot(randomDirection, glm::vec3(0.0, 1.0, 0.0)));

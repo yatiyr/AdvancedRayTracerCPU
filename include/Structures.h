@@ -22,6 +22,15 @@ enum RenderMode
     HDR     = 1
 };
 
+enum BRDFType
+{
+    ORIGINAL_PHONG      = 0,
+    MODIFIED_PHONG       = 1,
+    ORIGINAL_BLINN_PHONG = 2,
+    MODIFIED_BLINN_PHONG = 3,
+    TORRANCE_SPARROW     = 4
+};
+
 struct Camera
 {
     alignas(16) glm::vec3 position;
@@ -49,6 +58,14 @@ struct Camera
 
 };
 
+struct BRDF 
+{
+    BRDFType type;
+    float exponent;
+    bool normalized;
+    bool kdfresnel;
+};
+
 struct Material
 {
     alignas(16) glm::vec3 ambientReflectance;
@@ -63,6 +80,8 @@ struct Material
     float roughness;
 
     bool degammaFlag;
+    bool hasBrdf;
+    BRDF brdf;
 };
 
 struct Vertex

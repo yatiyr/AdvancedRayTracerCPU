@@ -25,7 +25,7 @@ bool DirectionalLight::ShadowRayIntersection(float tmin, float tmax, float inter
 glm::vec3 DirectionalLight::ComputeDiffuseSpecular(const Ray& ray, glm::vec3& diffuseReflectance, glm::vec3& specularReflectance,
                                                    const float& phongExponent, const IntersectionReport& report,
                                                    float tmin, float tmax, float intersectionTestEpsilon, float shadowRayEpsilon,
-                                                   bool backfaceCulling, float time, std::vector<Object *>& objectPointerVector, float gamma)
+                                                   bool backfaceCulling, float time, std::vector<Object *>& objectPointerVector, float gamma, bool hasBRDF, BRDF brdf, float refractiveIndex, float absorbtionIndex)
 {
 
     glm::vec3 result = glm::vec3(0.0);

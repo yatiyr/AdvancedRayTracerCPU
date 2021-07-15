@@ -23,7 +23,8 @@ Scene::Scene(const std::string& filepath)
     SceneReadCameras(root, _cameras, imageNames, _imageName);
     SceneReadTextures(root, _images, _textures, _backgroundTextureIndex);    
     SceneReadLights(root, _pointLights, _areaLights, _environmentLights, _directionalLights, _spotLights, _images, _ambientLight);
-    SceneReadMaterials(root, _materials);
+    SceneReadBRDF(root, _brdfs);
+    SceneReadMaterials(root, _materials, _brdfs);
     SceneReadVertexData(root, _vertexData);
     SceneReadTexCoordData(root, _texCoordData);
     SceneReadTransformations(root, _translationMatrices, _rotationMatrices, _scalingMatrices, _compositeMatrices);
@@ -301,7 +302,12 @@ glm::vec3 Scene::ComputeDiffuseSpecular(const IntersectionReport& report, const 
 
     glm::vec3 diffuseReflectance  = _materials[report.materialId].diffuseReflectance;
     glm::vec3 specularReflectance = _materials[report.materialId].specularReflectance;
+    float refractionIndex         = _materials[report.materialId].refractionIndex;
+    float absorbtionIndex         = _materials[report.materialId].absorptionIndex;
     float phongExponent           = _materials[report.materialId].phongExponent;
+
+    BRDF brdf = _materials[report.materialId].brdf;
+    bool hasBrdf   = _materials[report.materialId].hasBrdf;
     bool gammaflag = _materials[report.materialId].degammaFlag;
 
     for(size_t i=0; i<_lightPointerVector.size(); i++)
@@ -311,12 +317,12 @@ glm::vec3 Scene::ComputeDiffuseSpecular(const IntersectionReport& report, const 
         {
             result += _lightPointerVector[i]->ComputeDiffuseSpecular(ray, diffuseReflectance, specularReflectance, phongExponent,
                                                                  report, 0.00001, 2000, _intersectionTestEpsilon, _shadowRayEpsilon, 
-                                                                 true, ray.time, _objectPointerVector, _activeCamera.gamma);
+                                                                 true, ray.time, _objectPointerVector, _activeCamera.gamma, hasBrdf, brdf, refractionIndex, absorbtionIndex);
         }
         else
             result += _lightPointerVector[i]->ComputeDiffuseSpecular(ray, diffuseReflectance, specularReflectance, phongExponent,
                                                                  report, 0.00001, 2000, _intersectionTestEpsilon, _shadowRayEpsilon, 
-                                                                 true, ray.time, _objectPointerVector, 0);            
+                                                                 true, ray.time, _objectPointerVector, 0, hasBrdf, brdf, refractionIndex, absorbtionIndex);            
         
 
     }

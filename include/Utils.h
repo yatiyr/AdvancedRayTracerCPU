@@ -432,7 +432,87 @@ inline void SceneReadLights(tinyxml2::XMLNode* root, std::vector<PointLight>& _p
     stream.clear();
 }
 
-inline void SceneReadMaterials(tinyxml2::XMLNode* root, std::vector<Material>& _materials)
+inline void SceneReadBRDF(tinyxml2::XMLNode* root, std::vector<BRDF>& _brdfs)
+{
+    std::stringstream stream;
+    auto element = root->FirstChildElement("BRDFs");
+    if(element)
+        element = element->FirstChildElement();
+        
+    BRDF brdf;
+    brdf.exponent = 1;
+    while(element)
+    {
+        const char* name = element->Name();
+        auto child = element->FirstChildElement("Exponent");
+
+        if(element->Attribute("normalized"))
+        {
+            if(std::strcmp(element->Attribute("normalized"), "true") == 0)
+            {
+                brdf.normalized = true;
+            }
+            else
+            {
+                brdf.normalized = false;
+            }
+        }
+        else
+        {
+            brdf.normalized = false;
+        }
+
+        if(child)
+        {
+            stream << child->GetText() << std::endl;
+            stream >> brdf.exponent;
+        }
+
+
+
+        if(std::strcmp(name, "TorranceSparrow") == 0)
+        {
+            brdf.type = BRDFType::TORRANCE_SPARROW;
+            if(element->Attribute("kdfresnel"))
+            {
+                if(std::strcmp(element->Attribute("kdfresnel"), "true") == 0)
+                {
+                    brdf.kdfresnel = true;
+                }
+                else
+                {
+                    brdf.kdfresnel = false;
+                }
+            }
+            else
+            {
+                brdf.kdfresnel = false;
+            }
+        }
+        else if(std::strcmp(name, "ModifiedBlinnPhong") == 0)
+        {
+            brdf.type = BRDFType::MODIFIED_BLINN_PHONG;
+        }
+        else if(std::strcmp(name, "ModifiedPhong") == 0)
+        {
+            brdf.type = BRDFType::MODIFIED_PHONG;
+        }
+        else if(std::strcmp(name, "OriginalPhong") == 0)
+        {
+            brdf.type = BRDFType::ORIGINAL_PHONG;
+        }
+        else if(std::strcmp(name, "OriginalBlinnPhong") == 0)
+        {
+            brdf.type = BRDFType::ORIGINAL_BLINN_PHONG;
+        }        
+
+        _brdfs.push_back(brdf);
+        element = element->NextSiblingElement();
+    }
+
+}
+
+inline void SceneReadMaterials(tinyxml2::XMLNode* root, std::vector<Material>& _materials, std::vector<BRDF>& _brdfs)
 {
     std::stringstream stream;
     auto element = root->FirstChildElement("Materials");
@@ -441,6 +521,8 @@ inline void SceneReadMaterials(tinyxml2::XMLNode* root, std::vector<Material>& _
     while(element)
     {
      
+        material.hasBrdf = false;
+
         auto child = element->FirstChildElement("AmbientReflectance");
         stream << child->GetText() << std::endl;
         child = element->FirstChildElement("DiffuseReflectance");
@@ -548,6 +630,19 @@ inline void SceneReadMaterials(tinyxml2::XMLNode* root, std::vector<Material>& _
             {
                 material.type = 0;
             }
+        }
+
+        if(element->Attribute("BRDF"))
+        {
+            std::stringstream ss;
+            ss << element->Attribute("BRDF") << std::endl;
+            int brdfIndex = 0;
+            ss >> brdfIndex;
+            material.hasBrdf = true;
+            material.brdf.exponent = _brdfs[brdfIndex - 1].exponent;
+            material.brdf.kdfresnel = _brdfs[brdfIndex - 1].kdfresnel;
+            material.brdf.type = _brdfs[brdfIndex - 1].type;
+            material.brdf.normalized = _brdfs[brdfIndex - 1].normalized;
         }
 
         _materials.push_back(material);

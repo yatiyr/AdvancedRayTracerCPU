@@ -28,7 +28,7 @@ bool PointLight::ShadowRayIntersection(float tmin, float tmax, float intersectio
 glm::vec3 PointLight::ComputeDiffuseSpecular(const Ray& ray, glm::vec3& diffuseReflectance, glm::vec3& specularReflectance,
                                              const float& phongExponent, const IntersectionReport& report,
                                              float tmin, float tmax, float intersectionTestEpsilon, float shadowRayEpsilon,
-                                             bool backfaceCulling, float time, std::vector<Object *>& objectPointerVector, float gamma)
+                                             bool backfaceCulling, float time, std::vector<Object *>& objectPointerVector, float gamma, bool hasBRDF, BRDF brdf, float refractiveIndex, float absorbtionIndex)
 {
 
     glm::vec3 result = glm::vec3(0.0);
@@ -59,18 +59,25 @@ glm::vec3 PointLight::ComputeDiffuseSpecular(const Ray& ray, glm::vec3& diffuseR
             specularReflectance.x = std::pow(specularReflectance.x,gamma);
             specularReflectance.y = std::pow(specularReflectance.y,gamma);   
             specularReflectance.z = std::pow(specularReflectance.z,gamma); 
-        }                                      
+        }   
 
-        result += diffuseReflectance * 
+        glm::vec3 brdfComponent = computeF(ray, wi, 
+                                           diffuseReflectance,
+                                           specularReflectance,
+                                           phongExponent,
+                                           report,
+                                           hasBRDF,
+                                           brdf,
+                                           refractiveIndex,
+                                           absorbtionIndex);
+
+
+
+        result += brdfComponent * 
                 std::max(0.0f, glm::dot(wi, report.normal)) *
                 (intensity / (lightDistance * lightDistance));
+                                    
 
-        // Specular Calculation
-        glm::vec3 h = glm::normalize(wi - ray.direction);
-
-        result += specularReflectance *
-                std::pow(std::max(0.0f, glm::dot(report.normal, h)), phongExponent) *
-                (intensity / (lightDistance * lightDistance));
     }
 
     return result;   

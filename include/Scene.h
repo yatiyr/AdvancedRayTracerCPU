@@ -104,20 +104,21 @@ private:
 
     std::vector<Object*> _objectPointerVector;
 
-    std::vector<PointLight> _pointLights;
-    std::vector<AreaLight> _areaLights;
+    std::vector<PointLight>       _pointLights;
+    std::vector<AreaLight>        _areaLights;
     std::vector<EnvironmentLight> _environmentLights;
     std::vector<DirectionalLight> _directionalLights;
-    std::vector<SpotLight> _spotLights;
+    std::vector<SpotLight>        _spotLights;
 
     std::vector<Light*> _lightPointerVector;
 
+    std::vector<BRDF>       _brdfs;
     std::vector<Material>   _materials;
     std::vector<Camera>     _cameras;
 
     float _shadowRayEpsilon;
     float _intersectionTestEpsilon;    
-    int _maxRecursionDepth;
+    int   _maxRecursionDepth;
 
     std::vector<std::string> imageNames;
     float* _image;
