@@ -29,6 +29,7 @@ public:
     Renderer(const std::string& filepath);
     ~Renderer();
 
+    void RenderOneCamera();
     void Render();
     void WriteExr(float* rgb);
 

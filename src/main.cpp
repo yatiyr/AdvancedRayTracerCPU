@@ -4,7 +4,7 @@
 int main(int argc, char** argv)
 {
 
-    std::string path = std::string("assets/scenes/cube_point_hdr.xml");
+    std::string path = std::string(argv[1]);
 
     Renderer RnDr(path);
 

@@ -200,6 +200,7 @@ inline void SceneReadCameras(tinyxml2::XMLNode* root, std::vector<Camera>& _came
         stream >> imageName;
         imageNames.push_back(imageName);
         _imageName = imageName;
+        camera.imageName = imageName;
 
         int dotIndex = imageName.find(".")+1;
         std::string extensionType = imageName.substr(dotIndex, imageName.size());
@@ -1173,8 +1174,8 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
                 glm::vec3 b = _vertexData[indexVector[i].b + vertexOffset - 1];
                 glm::vec3 c = _vertexData[indexVector[i].c + vertexOffset - 1];            
 
-                glm::vec3 ba = 10.f*(b-a);
-                glm::vec3 ca = 10.f*(c-a); 
+                glm::vec3 ba = (b-a);
+                glm::vec3 ca = (c-a); 
 
                 if(ba == glm::vec3(0.0))               
                     ba = glm::vec3(0.0001, 0.0001, 0.0001);
@@ -1194,22 +1195,10 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
                 neighborCount[indexVector[i].a + vertexOffset - 1] += 1;
                 neighborCount[indexVector[i].b + vertexOffset - 1] += 1;
                 neighborCount[indexVector[i].c + vertexOffset - 1] += 1;                
-
-                if(i == 3165)
-                    int adsasd = 0;
-
-                if(indexVector[i].a == 2476 || indexVector[i].b == 2476 || indexVector[i].c == 2476)
-                    int bbb = 0;
             }
 
             for(size_t i=0; i<indexVector.size(); i++)
             {
-                if(i == 3165)
-                    int adsasd = 0;
-
-                if(indexVector[i].a == 152 || indexVector[i].b == 152 || indexVector[i].c == 152)
-                    int bbb = 0;
-
                 normals[indexVector[i].a + vertexOffset - 1] /= neighborCount[indexVector[i].a + vertexOffset - 1];
                 normals[indexVector[i].b + vertexOffset - 1] /= neighborCount[indexVector[i].b + vertexOffset - 1];
                 normals[indexVector[i].c + vertexOffset - 1] /= neighborCount[indexVector[i].c + vertexOffset - 1];
@@ -1223,10 +1212,6 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
                 glm::vec3 b = _vertexData[indexVector[i].b + vertexOffset - 1];                
                 glm::vec3 c = _vertexData[indexVector[i].c + vertexOffset - 1];                
 
-                if(std::isnan(normals[indexVector[i].a + vertexOffset - 1].x) && i != 0 && i != 1)
-                {
-                    int asdasddsa = 1;
-                }
                 Triangle tri(a, b, c, normals[indexVector[i].a + vertexOffset - 1], normals[indexVector[i].b + vertexOffset - 1], normals[indexVector[i].c + vertexOffset - 1]);
 
                 if(_texCoordData.size() > indexVector[i].a + textureOffset - 1)

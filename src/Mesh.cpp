@@ -24,10 +24,6 @@ bool Mesh::Intersect(const Ray& ray, IntersectionReport& report, float tmin, flo
 
     report.materialId = materialId;
 
-    if(std::isnan(report.normal.x))
-    {
-        std::cout << "asdas" << std::endl;
-    }
     if(test)
     {
         report.intersection = ray.origin + ray.direction * report.d;

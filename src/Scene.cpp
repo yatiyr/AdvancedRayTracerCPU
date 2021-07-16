@@ -120,12 +120,16 @@ void Scene::RenderThread()
     {
         element.get();
     }
+
+    futureVector.clear();
+    count = 0;
 }
 
 float* Scene::GetImage()
 {
     Timer t;
     RenderThread();
+    std::cout << "Rendered: " << _activeCamera.imageName << " ";
     return _image;
 }
 
@@ -317,12 +321,12 @@ glm::vec3 Scene::ComputeDiffuseSpecular(const IntersectionReport& report, const 
         {
             result += _lightPointerVector[i]->ComputeDiffuseSpecular(ray, diffuseReflectance, specularReflectance, phongExponent,
                                                                  report, 0.00001, 2000, _intersectionTestEpsilon, _shadowRayEpsilon, 
-                                                                 true, ray.time, _objectPointerVector, _activeCamera.gamma, hasBrdf, brdf, refractionIndex, absorbtionIndex);
+                                                                 true, ray.time, _objectPointerVector, gammaflag, _activeCamera.gamma, hasBrdf, brdf, refractionIndex, absorbtionIndex);
         }
         else
             result += _lightPointerVector[i]->ComputeDiffuseSpecular(ray, diffuseReflectance, specularReflectance, phongExponent,
                                                                  report, 0.00001, 2000, _intersectionTestEpsilon, _shadowRayEpsilon, 
-                                                                 true, ray.time, _objectPointerVector, 0, hasBrdf, brdf, refractionIndex, absorbtionIndex);            
+                                                                 true, ray.time, _objectPointerVector, gammaflag, 0, hasBrdf, brdf, refractionIndex, absorbtionIndex);            
         
 
     }
@@ -387,7 +391,7 @@ glm::vec3 Scene::TraceAndFilter(std::vector<RayWithWeigth> rwwVector, int x, int
     for(size_t i=0; i<rwwVector.size(); i++)
     {
 
-        RayTraceResult rtResult = RayTrace(rwwVector[i].r, true);
+        RayTraceResult rtResult = RayTrace(rwwVector[i].r, false);
 
         if(rtResult.hit)
         {

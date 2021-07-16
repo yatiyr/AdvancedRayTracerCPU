@@ -45,7 +45,7 @@ bool EnvironmentLight::ShadowRayIntersection(float tmin, float tmax, float inter
 glm::vec3 EnvironmentLight::ComputeDiffuseSpecular(const Ray& ray, glm::vec3& diffuseReflectance, glm::vec3& specularReflectance,
                                                    const float& phongExponent, const IntersectionReport& report,
                                                    float tmin, float tmax, float intersectionTestEpsilon, float shadowRayEpsilon,
-                                                   bool backfaceCulling, float time, std::vector<Object *>& objectPointerVector, float gamma, bool hasBRDF, BRDF brdf, float refractiveIndex, float absorbtionIndex)
+                                                   bool backfaceCulling, float time, std::vector<Object *>& objectPointerVector, bool degammaFlag, float gamma, bool hasBRDF, BRDF brdf, float refractiveIndex, float absorbtionIndex)
 {
     RejectionSampling(report.normal);
     float theta = std::acos(glm::dot(randomDirection, glm::vec3(0.0, 1.0, 0.0)));
@@ -75,29 +75,36 @@ glm::vec3 EnvironmentLight::ComputeDiffuseSpecular(const Ray& ray, glm::vec3& di
 
         glm::vec3 wi = randomDirection;
 
-        if(gamma > 0)
-        {
-            diffuseReflectance.x = std::pow(diffuseReflectance.x,gamma);
-            diffuseReflectance.y = std::pow(diffuseReflectance.y,gamma);
-            diffuseReflectance.z = std::pow(diffuseReflectance.z,gamma);
-
-            specularReflectance.x = std::pow(specularReflectance.x,gamma);
-            specularReflectance.y = std::pow(specularReflectance.y,gamma);   
-            specularReflectance.z = std::pow(specularReflectance.z,gamma); 
-        }  
+        glm::vec3 diffuseReflectanceU  = diffuseReflectance;
+        glm::vec3 specularReflectanceU = specularReflectance;
 
         // Diffuse Calculation
-        
-        result += diffuseReflectance * 
-                std::max(0.0f, glm::dot(wi, report.normal)) *
-                (radiance);
+        if(degammaFlag)
+        {
+            diffuseReflectanceU.x = std::pow(diffuseReflectance.x,gamma);
+            diffuseReflectanceU.y = std::pow(diffuseReflectance.y,gamma);
+            diffuseReflectanceU.z = std::pow(diffuseReflectance.z,gamma);
 
-        // Specular Calculation
-        glm::vec3 h = glm::normalize(wi - ray.direction);
+            specularReflectanceU.x = std::pow(specularReflectance.x,gamma);
+            specularReflectanceU.y = std::pow(specularReflectance.y,gamma);   
+            specularReflectanceU.z = std::pow(specularReflectance.z,gamma); 
+        }   
 
-        result += specularReflectance *
-                std::pow(std::max(0.0f, glm::dot(report.normal, h)), phongExponent) *
-                (radiance); 
+        glm::vec3 brdfComponent = computeF(ray, wi, 
+                                           diffuseReflectanceU,
+                                           specularReflectanceU,
+                                           phongExponent,
+                                           report,
+                                           hasBRDF,
+                                           brdf,
+                                           refractiveIndex,
+                                           absorbtionIndex);
+
+
+
+        result += brdfComponent * 
+                  std::max(0.0f, glm::dot(wi, report.normal)) *
+                  (radiance);
     }
 
     return result;    

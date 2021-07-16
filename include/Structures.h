@@ -55,6 +55,8 @@ struct Camera
     float saturation = 1.0;
     float gamma = 2.2;
 
+    std::string imageName;
+
 
 };
 

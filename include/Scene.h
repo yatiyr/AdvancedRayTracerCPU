@@ -63,7 +63,6 @@ private:
     bool backfaceCulling;
 
     RandomGenerator* randomVariableGenerator;
-    RandomGenerator* cameraVariableGenerator;
     RandomGenerator* areaLightPositionGenerator;
     RandomGenerator* motionBlurTimeGenerator;
     RandomGenerator* glossyReflectionVarGenerator;
@@ -114,18 +113,15 @@ private:
 
     std::vector<BRDF>       _brdfs;
     std::vector<Material>   _materials;
-    std::vector<Camera>     _cameras;
 
     float _shadowRayEpsilon;
     float _intersectionTestEpsilon;    
     int   _maxRecursionDepth;
 
     std::vector<std::string> imageNames;
-    float* _image;
 
     Ray ComputePrimaryRay(int i, int j);
     std::vector<RayWithWeigth> ComputePrimaryRays(int i, int j);
-    void ClearImage();
 
 
     // RELATED TO RAY TRACING
@@ -162,8 +158,11 @@ public:
 
     int _imageWidth;
     int _imageHeight;
+    float* _image;
     std::string _imageName;
+    std::vector<Camera> _cameras;    
     Camera _activeCamera;
+    RandomGenerator* cameraVariableGenerator;    
 
     Scene(const std::string& filepath);
     ~Scene();
@@ -171,6 +170,7 @@ public:
     glm::vec2 GiveCoords(int index, int width);
 
     float* GetImage();
+    void ClearImage();
 
     void WritePixelCoord(int i, int j, const glm::vec3& color);
 };

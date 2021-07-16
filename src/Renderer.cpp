@@ -185,7 +185,7 @@ void Renderer::WriteExr(float* rgb)
         header.requested_pixel_types[i] = TINYEXR_PIXELTYPE_HALF;
     }
 
-    std::string outputPath =  "outputs/" + scene._imageName;
+    std::string outputPath =  "outputs/" + scene._activeCamera.imageName;
     int dotIndex = outputPath.find('.');
     std::string pathWithoutExtension = outputPath.substr(0, dotIndex) + ".exr";    
     const char* err;
@@ -202,7 +202,7 @@ void Renderer::WriteExr(float* rgb)
     free(header.requested_pixel_types);
 }
 
-void Renderer::Render()
+void Renderer::RenderOneCamera()
 {
     uint8_t *result;
 
@@ -210,26 +210,46 @@ void Renderer::Render()
 
     if(scene._activeCamera.renderMode == RenderMode::CLASSIC)
     {
-        std::string outputPath = "outputs/" + scene._imageName;
-        Clamp0_255(obtainedImage, scene._imageWidth, scene._imageHeight);
-        result = GiveResult(obtainedImage, scene._imageWidth, scene._imageHeight);
-        stbi_write_png(outputPath.c_str(), scene._imageWidth, scene._imageHeight, 3, result, scene._imageWidth *3);        
+        std::string outputPath = "outputs/" + scene._activeCamera.imageName;
+        Clamp0_255(obtainedImage, scene._activeCamera.imageResolution.x, scene._activeCamera.imageResolution.y);
+        result = GiveResult(obtainedImage, scene._activeCamera.imageResolution.x, scene._activeCamera.imageResolution.y);
+        stbi_write_png(outputPath.c_str(), scene._activeCamera.imageResolution.x, scene._activeCamera.imageResolution.y, 3, result, scene._activeCamera.imageResolution.x *3);        
     }
     else if(scene._activeCamera.renderMode == RenderMode::HDR)
     {
-        std::string outputPath = "outputs/" + scene._imageName;
+        std::string outputPath = "outputs/" + scene._activeCamera.imageName;
         WriteExr(obtainedImage);
 
         int dotIndex = outputPath.find('.');
         std::string pathWithoutExtension = outputPath.substr(0, dotIndex) + "_tonemapped.png"; 
-        ToneMap(obtainedImage, scene._imageWidth, scene._imageHeight);
-        result = GiveResult(obtainedImage, scene._imageWidth, scene._imageHeight);
-        stbi_write_png(pathWithoutExtension.c_str(), scene._imageWidth, scene._imageHeight, 3, result, scene._imageWidth *3);        
+        ToneMap(obtainedImage, scene._activeCamera.imageResolution.x, scene._activeCamera.imageResolution.y);
+        result = GiveResult(obtainedImage, scene._activeCamera.imageResolution.x, scene._activeCamera.imageResolution.y);
+        stbi_write_png(pathWithoutExtension.c_str(), scene._activeCamera.imageResolution.x, scene._activeCamera.imageResolution.y, 3, result, scene._activeCamera.imageResolution.x *3);        
     }
-
 
     delete[] result;
 
+}
+
+void Renderer::Render()
+{
+    for(size_t i=0; i<scene._cameras.size(); i++)
+    {
+        scene._activeCamera = scene._cameras[i];
+        scene._imageHeight = scene._activeCamera.imageResolution.y;
+        scene._imageWidth  = scene._activeCamera.imageResolution.x;
+
+        float halfAperture = scene._activeCamera.apertureSize/2;
+
+        scene.cameraVariableGenerator = new RandomGenerator(-halfAperture, halfAperture);
+
+        RenderOneCamera();
+
+        delete[] scene._image;
+        scene._image = new float[scene._imageHeight*scene._imageWidth*3];
+        scene.ClearImage();
+
+    }
 }
 
 

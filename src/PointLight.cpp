@@ -28,7 +28,7 @@ bool PointLight::ShadowRayIntersection(float tmin, float tmax, float intersectio
 glm::vec3 PointLight::ComputeDiffuseSpecular(const Ray& ray, glm::vec3& diffuseReflectance, glm::vec3& specularReflectance,
                                              const float& phongExponent, const IntersectionReport& report,
                                              float tmin, float tmax, float intersectionTestEpsilon, float shadowRayEpsilon,
-                                             bool backfaceCulling, float time, std::vector<Object *>& objectPointerVector, float gamma, bool hasBRDF, BRDF brdf, float refractiveIndex, float absorbtionIndex)
+                                             bool backfaceCulling, float time, std::vector<Object *>& objectPointerVector, bool degammaFlag, float gamma, bool hasBRDF, BRDF brdf, float refractiveIndex, float absorbtionIndex)
 {
 
     glm::vec3 result = glm::vec3(0.0);
@@ -49,21 +49,24 @@ glm::vec3 PointLight::ComputeDiffuseSpecular(const Ray& ray, glm::vec3& diffuseR
         float lightDistance = glm::length(position - report.intersection);
         glm::vec3 wi = glm::normalize(position - report.intersection);
 
-        // Diffuse Calculation
-        if(gamma > 0)
-        {
-            diffuseReflectance.x = std::pow(diffuseReflectance.x,gamma);
-            diffuseReflectance.y = std::pow(diffuseReflectance.y,gamma);
-            diffuseReflectance.z = std::pow(diffuseReflectance.z,gamma);
+        glm::vec3 diffuseReflectanceU  = diffuseReflectance;
+        glm::vec3 specularReflectanceU = specularReflectance;
 
-            specularReflectance.x = std::pow(specularReflectance.x,gamma);
-            specularReflectance.y = std::pow(specularReflectance.y,gamma);   
-            specularReflectance.z = std::pow(specularReflectance.z,gamma); 
+        // Diffuse Calculation
+        if(degammaFlag)
+        {
+            diffuseReflectanceU.x = std::pow(diffuseReflectance.x,gamma);
+            diffuseReflectanceU.y = std::pow(diffuseReflectance.y,gamma);
+            diffuseReflectanceU.z = std::pow(diffuseReflectance.z,gamma);
+
+            specularReflectanceU.x = std::pow(specularReflectance.x,gamma);
+            specularReflectanceU.y = std::pow(specularReflectance.y,gamma);   
+            specularReflectanceU.z = std::pow(specularReflectance.z,gamma); 
         }   
 
         glm::vec3 brdfComponent = computeF(ray, wi, 
-                                           diffuseReflectance,
-                                           specularReflectance,
+                                           diffuseReflectanceU,
+                                           specularReflectanceU,
                                            phongExponent,
                                            report,
                                            hasBRDF,

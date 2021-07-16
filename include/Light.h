@@ -15,7 +15,7 @@ public:
     virtual glm::vec3 ComputeDiffuseSpecular(const Ray& ray, glm::vec3& diffuseReflectance, glm::vec3& specularReflectance,
                                              const float& phongExponent, const IntersectionReport& report,
                                              float tmin, float tmax, float intersectionTestEpsilon, float shadowRayEpsilon,
-                                             bool backfaceCulling, float time, std::vector<Object *>& objectPointerVector, float gamma, bool hasBRDF, BRDF brdf, float refractiveIndex, float absorbtionIndex) = 0;
+                                             bool backfaceCulling, float time, std::vector<Object *>& objectPointerVector, bool degammaFlag, float gamma, bool hasBRDF, BRDF brdf, float refractiveIndex, float absorbtionIndex) = 0;
 
     glm::vec3 computeF(const Ray& ray, glm::vec3& wi, glm::vec3& diffuseReflectance, glm::vec3& specularReflectance, const float& phongExponent, const IntersectionReport& report,
                    bool hasBRDF, BRDF brdf, float refractiveIndex, float absorbtionIndex)
@@ -32,7 +32,7 @@ public:
         if(cosThetaI <= 0)
             return glm::vec3(0.0);
 
-        float cosAlphaR = std::max(0.0f, glm::dot(-ray.direction, reflectionWrtNormal));
+        float cosAlphaR = std::max(0.0f, glm::dot(-ray.direction, -reflectionWrtNormal));
 
         float cosAlphaH = std::max(0.0f, glm::dot(halfVector, report.normal));
 
@@ -74,15 +74,27 @@ public:
                 float geometryTerm = std::min(1.0f, std::min(part1, part2));
 
                 // Compute Fresnel reflectance
+
+                float aI = absorbtionIndex;
+                float rI = refractiveIndex;
+
+                float rS = ((rI*rI + aI*aI) - 2*rI*cosThetaI + (cosThetaI*cosThetaI))/
+                        ((rI*rI + aI*aI) + 2*rI*cosThetaI + (cosThetaI*cosThetaI));
+
+                float rP = ((rI*rI + aI*aI)*(cosThetaI*cosThetaI) - 2*rI*cosThetaI + 1)/
+                        ((rI*rI + aI*aI)*(cosThetaI*cosThetaI) + 2*rI*cosThetaI + 1);
+
+                float reflectionRatio = (rS + rP)/2; 
+
                 float r0 = std::pow(refractiveIndex - 1, 2) / std::pow(refractiveIndex + 1, 2);
-                float fresnel = r0 + (1 - r0) * std::pow(1 - cosBeta, 5);
+                float fresnel = reflectionRatio;//r0 + (1 - r0) * std::pow(1 - cosBeta, 5);
 
                 glm::vec3 diffusePart = diffuseReflectance;
 
                 if(brdf.kdfresnel)
                     diffusePart = (1 - fresnel) * diffusePart;
 
-                result += diffusePart * (float(M_PI)) + specularReflectance * probability * fresnel * geometryTerm / (4 * cosThetaI * nDotWo);
+                result += diffusePart / (float(M_PI)) + specularReflectance * probability * fresnel * geometryTerm / (4 * cosThetaI * nDotWo);
 
             }            
         }
