@@ -38,6 +38,18 @@ public:
 
     }
 
+    glm::mat4 MotionBlurTranslate2(float time)
+    {
+        if(translationVector.x == 0 &&
+           translationVector.y == 0 &&
+           translationVector.z == 0)
+           return glm::mat4(1.0f);
+
+        glm::vec3 currentTranslation = time * translationVector;
+
+        return glm::translate(glm::mat4(1.0f),currentTranslation);        
+    }
+
     float ColorDistance(glm::vec3 c1, glm::vec3 c2)
     {
         long rmean = ((long)c1.x + (long)c2.x) / 2;

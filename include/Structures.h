@@ -138,6 +138,9 @@ struct IntersectionReport
     bool diffuseActive = false;
     bool specularActive = false;
     bool emissionActive = false;
+    bool isLight = false;
+
+    float throughput;
 
 };
 

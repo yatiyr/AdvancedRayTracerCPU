@@ -24,6 +24,8 @@ public:
     size_t materialId;
 
     glm::vec3 normal;
+    float area;
+    
     Triangle(glm::vec3 a, glm::vec3 b, glm::vec3 c);
     Triangle(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 aNormal, glm::vec3 bNormal, glm::vec3 cNormal);
     

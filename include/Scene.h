@@ -38,6 +38,9 @@
 #include <SpotLight.h>
 #include <EnvironmentLight.h>
 
+#include <DirectionSampler.h>
+
+
 struct WorkGroup
 {
     int start;

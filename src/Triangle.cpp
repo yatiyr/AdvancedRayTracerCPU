@@ -20,7 +20,9 @@ Triangle::Triangle(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 aNormal, glm
 	this->bNormal = bNormal;
 	this->cNormal = cNormal;
 
-    this->normal = glm::normalize(glm::cross((b-a), (c-a)));	
+    this->normal = glm::normalize(glm::cross((b-a), (c-a)));
+
+    this->area   = glm::length(glm::cross(b-a, c-a))/2;
 }
 
 bool Triangle::Intersect(const Ray& ray, IntersectionReport& report, float tmin, float tmax, float intersectionTestEpsilon, bool backfaceCulling)
@@ -291,7 +293,7 @@ bool Triangle::Intersect(const Ray& ray, IntersectionReport& report, float tmin,
 		{
         	report.normal       = transformationMatrixInverseTransposed * glm::vec4(this->normal, 0.0f);
 			report.normal       = glm::normalize(report.normal);
-
+            
 			if(backfaceCulling)
 			{
 				if(glm::dot(ray.direction, normal) > 0)

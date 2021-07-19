@@ -19,6 +19,8 @@
 #include <SpotLight.h>
 #include <EnvironmentLight.h>
 
+#include <LightMesh.h>
+#include <LightSphere.h>
 
 
 const double EULER =  2.71828182845904523536;
@@ -80,7 +82,7 @@ inline void SceneReadConstants(tinyxml2::XMLNode* root, glm::vec3& _backgroundCo
     }
     else
     {
-        stream << "0.01" << std::endl;
+        stream << "0.0001" << std::endl;
     }
     stream >> _shadowRayEpsilon;
 
@@ -923,6 +925,8 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
         stream >> materialId;
 
 
+        stream.clear();
+        
         child = element->FirstChildElement("Faces");
         stream << child->GetText() << std::endl;
 
@@ -1155,10 +1159,21 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
             if(child->Attribute("textureOffset"))
                 textureOffset = std::stoi(child->Attribute("textureOffset"));
 
+            std::unordered_map<int, glm::vec3> normal_map;
+            std::unordered_map<int, int> neighborCount_map;
 
             while(!(stream >> indices.a).eof())
             {
                 stream >> indices.b >> indices.c;
+
+                normal_map[indices.a - 1] = glm::vec3(0.0f);
+                normal_map[indices.b - 1] = glm::vec3(0.0f);
+                normal_map[indices.c - 1] = glm::vec3(0.0f);
+
+                neighborCount_map[indices.a -1] = 1;
+                neighborCount_map[indices.b -1] = 1;
+                neighborCount_map[indices.c -1] = 1;
+
                 indexVector.push_back(indices);
             }
 
@@ -1177,6 +1192,7 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
                 glm::vec3 ba = (b-a);
                 glm::vec3 ca = (c-a); 
 
+                
                 if(ba == glm::vec3(0.0))               
                     ba = glm::vec3(0.0001, 0.0001, 0.0001);
 
@@ -1184,17 +1200,27 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
                     ca = glm::vec3(-0.0001, 0.0001, 0.0001);
 
                 if(ba == ca)
-                    ca += glm::vec3(0.00001, 0.00001, 0.00001);
+                    ca = glm::vec3(0.00001, 0.00001, 0.00001);
 
                 glm::vec3 normal = glm::normalize(glm::cross((ba), (ca)));
+
+
 
                 normals[indexVector[i].a + vertexOffset - 1] += normal;
                 normals[indexVector[i].b + vertexOffset - 1] += normal;
                 normals[indexVector[i].c + vertexOffset - 1] += normal;
 
+                normal_map[indexVector[i].a - 1] += normal;
+                normal_map[indexVector[i].b - 1] += normal;
+                normal_map[indexVector[i].c - 1] += normal;                
+
                 neighborCount[indexVector[i].a + vertexOffset - 1] += 1;
                 neighborCount[indexVector[i].b + vertexOffset - 1] += 1;
-                neighborCount[indexVector[i].c + vertexOffset - 1] += 1;                
+                neighborCount[indexVector[i].c + vertexOffset - 1] += 1;
+
+                neighborCount_map[indexVector[i].a - 1] += 1;
+                neighborCount_map[indexVector[i].b - 1] += 1;
+                neighborCount_map[indexVector[i].c - 1] += 1;                              
             }
 
             for(size_t i=0; i<indexVector.size(); i++)
@@ -1202,6 +1228,11 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
                 normals[indexVector[i].a + vertexOffset - 1] /= neighborCount[indexVector[i].a + vertexOffset - 1];
                 normals[indexVector[i].b + vertexOffset - 1] /= neighborCount[indexVector[i].b + vertexOffset - 1];
                 normals[indexVector[i].c + vertexOffset - 1] /= neighborCount[indexVector[i].c + vertexOffset - 1];
+
+                normal_map[indexVector[i].a - 1] /= neighborCount_map[indexVector[i].a - 1];
+                normal_map[indexVector[i].b - 1] /= neighborCount_map[indexVector[i].b - 1];
+                normal_map[indexVector[i].c - 1] /= neighborCount_map[indexVector[i].c - 1];     
+      
             }
 
 
@@ -1212,7 +1243,7 @@ inline void SceneReadMeshes(tinyxml2::XMLNode* root, std::vector<Mesh>& _meshes,
                 glm::vec3 b = _vertexData[indexVector[i].b + vertexOffset - 1];                
                 glm::vec3 c = _vertexData[indexVector[i].c + vertexOffset - 1];                
 
-                Triangle tri(a, b, c, normals[indexVector[i].a + vertexOffset - 1], normals[indexVector[i].b + vertexOffset - 1], normals[indexVector[i].c + vertexOffset - 1]);
+                Triangle tri(a, b, c, normal_map[indexVector[i].a - 1], normal_map[indexVector[i].b - 1], normal_map[indexVector[i].c - 1]);
 
                 if(_texCoordData.size() > indexVector[i].a + textureOffset - 1)
                     tri.texCoordA = _texCoordData[indexVector[i].a + textureOffset - 1];
