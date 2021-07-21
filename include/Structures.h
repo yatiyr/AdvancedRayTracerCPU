@@ -31,6 +31,12 @@ enum BRDFType
     TORRANCE_SPARROW     = 4
 };
 
+enum LightingMode
+{
+    PATH_TRACING    = 0,
+    DIRECT_LIGHTING = 1
+};
+
 struct Camera
 {
     alignas(16) glm::vec3 position;
@@ -56,6 +62,13 @@ struct Camera
     float gamma = 2.2;
 
     std::string imageName;
+
+
+    // Lighting Params
+    LightingMode lightingMode;
+    bool nextEventEstimation;
+    bool importanceSampling;
+    bool russianRoulette;
 
 
 };
@@ -140,7 +153,12 @@ struct IntersectionReport
     bool emissionActive = false;
     bool isLight = false;
 
+    glm::vec3 radiance;
+    float invProbability;
+
     float throughput;
+
+    void* hitObject;
 
 };
 

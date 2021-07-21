@@ -33,8 +33,12 @@ Scene::Scene(const std::string& filepath)
     SceneReadSpheres(root, _spheres, _textures, _vertexData, _rotationMatrices, _scalingMatrices, _translationMatrices, _compositeMatrices);
     SceneReadTriangles(root, _triangles, _textures, _vertexData, _texCoordData, _rotationMatrices, _scalingMatrices, _translationMatrices, _compositeMatrices);
 
-    ScenePopulateObjects(_objectPointerVector, _meshes, _meshInstances, _spheres, _triangles);
-    ScenePopulateLights(_lightPointerVector, _pointLights, _areaLights, _directionalLights, _spotLights, _environmentLights);
+    SceneReadLightMeshes(root, _lightMeshes, _textures, _vertexData, _texCoordData, _rotationMatrices, _scalingMatrices, _translationMatrices, _compositeMatrices);
+    SceneReadLightSpheres(root, _lightSpheres, _textures, _vertexData, _rotationMatrices, _scalingMatrices, _translationMatrices, _compositeMatrices);    
+
+
+    ScenePopulateObjects(_objectPointerVector, _lightObjectPointerVector ,_meshes, _meshInstances, _spheres, _triangles, _lightMeshes, _lightSpheres);
+    ScenePopulateLights(_lightPointerVector, _pointLights, _areaLights, _directionalLights, _spotLights, _environmentLights, _lightMeshes, _lightSpheres);
 
     _activeCamera = _cameras[0];
 
@@ -59,6 +63,8 @@ Scene::Scene(const std::string& filepath)
     motionBlurTimeGenerator = new RandomGenerator(0.0f, 1.0f);
 
     glossyReflectionVarGenerator = new RandomGenerator(-0.5f, 0.5f);
+
+    directionSampler = new DirectionSampler();
 
     
 }
@@ -362,6 +368,8 @@ RayTraceResult Scene::RayTrace(const Ray& ray, bool backfaceCulling)
         glm::vec3 pixel(0.0);
         if(r.diffuseActive && r.replaceAll)
             pixel = r.texDiffuseReflectance;
+        else if(r.isLight)
+            pixel = r.radiance;
         else
             pixel += ComputeAmbientComponent(r) + ComputeDiffuseSpecular(r, ray) + RecursiveTrace(ray, r, 0, false);
         
@@ -380,6 +388,420 @@ RayTraceResult Scene::RayTrace(const Ray& ray, bool backfaceCulling)
 
 }
 
+RayTraceResult Scene::PathTrace(const Ray& ray, bool backfaceCulling, int recursionDepth)
+{
+
+    RayTraceResult result;
+    result.hit = false;
+    result.resultColor = glm::vec3(0.0f);
+    // Checking stopping conditions
+    if(_activeCamera.russianRoulette && recursionDepth > this->_maxRecursionDepth)
+    {
+        float randomNumber = randomVariableGenerator->Generate();
+        float q = std::sqrt(1 - ray.rayThroughput);
+        if(randomNumber <= q)
+        {
+            result.hit = false;
+            result.resultColor = glm::vec3(0.0f);
+            return result;
+        }
+            
+    }
+    else if(!_activeCamera.russianRoulette && recursionDepth > this->_maxRecursionDepth)
+    {
+        result.hit = false;
+        result.resultColor = glm::vec3(0.0f);
+        return result;
+    }
+
+    IntersectionReport r;
+    bool flag = false;
+
+    if(TestWorldIntersection(ray, r, 0, 2000, _intersectionTestEpsilon, backfaceCulling))
+    {
+        if(r.diffuseActive && r.replaceAll)
+        {
+            result.hit = true;
+            result.resultColor = r.texDiffuseReflectance;
+        }
+        else if(r.isLight)
+        {
+            result.hit = true;
+            result.resultColor = r.radiance;
+            return result;
+        }
+        else
+        {
+            glm::vec3 bounceRayOrigin(0.0f);
+            glm::vec3 bounceRayDirection(0.0f);
+
+            Ray bounceRay;
+
+
+            glm::vec3 attenuation(1.0);
+
+            if(ray.materialIdCurrentlyIn != -1)
+            {
+                float dist = glm::length(ray.origin - r.intersection);
+                attenuation.x = std::pow((float)EULER, std::log(_materials[ray.materialIdCurrentlyIn].absorptionCoefficient.x) *dist);
+                attenuation.y = std::pow((float)EULER, std::log(_materials[ray.materialIdCurrentlyIn].absorptionCoefficient.y) *dist);
+                attenuation.z = std::pow((float)EULER, std::log(_materials[ray.materialIdCurrentlyIn].absorptionCoefficient.z) *dist);
+                                
+            }
+
+            // Diffuse
+            if(_materials[r.materialId].type == -1)
+            {
+                    
+                glm::vec3 reflectedRayOrigin = r.intersection + r.normal*_shadowRayEpsilon;
+                glm::vec3 reflectedRayDir;
+                float probabilityInv = 0;
+                if(_activeCamera.importanceSampling)
+                {
+                    reflectedRayDir = directionSampler->importanceSample(r.normal);
+                    probabilityInv  = M_PI / std::max(0.1f, glm::dot(reflectedRayDir, r.normal));
+                }
+                else
+                {
+                    reflectedRayDir = directionSampler->uniformSample(r.normal);
+                    probabilityInv  = 2 * M_PI;                         
+                }
+                Ray reflected(reflectedRayOrigin, reflectedRayDir);
+                reflected.rayThroughput = ray.rayThroughput * 0.88;
+                bool directionSuitable = true;
+
+                if(_activeCamera.nextEventEstimation)
+                {
+                    IntersectionReport report;
+
+                    if(TestWorldIntersection(reflected, report, 0, 2000, _intersectionTestEpsilon, backfaceCulling))
+                    {
+                        Object* obj = (Object*) report.hitObject;
+                        for(auto element : _lightObjectPointerVector)
+                        {
+                            if(obj == element)
+                                directionSuitable = false;
+                        }
+                    }
+
+                    if(directionSuitable)
+                    {
+                        result.resultColor = probabilityInv * getReflectance(ray, reflectedRayDir, 
+                                                            _materials[r.materialId].diffuseReflectance, 
+                                                            _materials[r.materialId].specularReflectance,
+                                                            _materials[r.materialId].phongExponent,
+                                                            r, _materials[r.materialId].degammaFlag,
+                                                            _activeCamera.gamma,
+                                                            _materials[r.materialId].hasBrdf, _materials[r.materialId].brdf,
+                                                            _materials[r.materialId].refractionIndex, _materials[r.materialId].absorptionIndex) *
+                                                            PathTrace(reflected, backfaceCulling, recursionDepth + 1).resultColor;
+                        result.resultColor += ComputeDiffuseSpecular(r, ray);
+                        result.hit = true;
+                    }
+                    else
+                    {
+                        result.resultColor = ComputeDiffuseSpecular(r, ray);
+                        result.hit = true;
+                    }
+                
+                }
+                else
+                {
+                    result.resultColor = probabilityInv * getReflectance(ray, reflectedRayDir, 
+                                                        _materials[r.materialId].diffuseReflectance, 
+                                                        _materials[r.materialId].specularReflectance,
+                                                        _materials[r.materialId].phongExponent,
+                                                        r, _materials[r.materialId].degammaFlag,
+                                                        _activeCamera.gamma,
+                                                        _materials[r.materialId].hasBrdf, _materials[r.materialId].brdf,
+                                                        _materials[r.materialId].refractionIndex, _materials[r.materialId].absorptionIndex) *
+                                                        PathTrace(reflected, backfaceCulling, recursionDepth + 1).resultColor;
+                    result.hit = true;
+                }
+
+            }
+            // Dielectric
+            else if(_materials[r.materialId].type == 1)
+            {
+
+                // Ray is entering
+                if(glm::dot(ray.direction, r.normal) < 0)
+                {
+                    glm::vec3 reflectedRayOrigin = r.intersection + r.normal * 0.000001f;
+                    glm::vec3 reflectedRayDir    = glm::normalize(glm::reflect(ray.direction, r.normal));
+
+                    float cosTheta = glm::dot(-ray.direction, r.normal);
+                    float coeffRatio = 1/_materials[r.materialId].refractionIndex;
+
+                    float cosPhiSquared = (1 - coeffRatio*coeffRatio * (1 - cosTheta*cosTheta));
+
+                    // Reflection and transmission both occur
+                    if(cosPhiSquared >= 0)
+                    {
+                        float cosPhi = std::sqrt(cosPhiSquared);
+
+                        // Building transmitted ray
+                        glm::vec3 transmittedRayOrigin = r.intersection - r.normal * 0.000001f;            
+                        glm::vec3 transmittedRayDir = (ray.direction + r.normal*cosTheta)*coeffRatio - r.normal*cosPhi;
+
+                        Ray tRay(transmittedRayOrigin, transmittedRayDir);
+                        tRay.mediumCoeffNow = _materials[r.materialId].refractionIndex;
+                        tRay.mediumCoeffBefore = ray.mediumCoeffNow;
+                        tRay.isRefracting = true;
+                        tRay.materialIdCurrentlyIn = r.materialId;
+                        tRay.time = ray.time;
+                        tRay.rayThroughput = ray.rayThroughput * 0.88;
+
+                        Ray reflected(reflectedRayOrigin, reflectedRayDir);
+                        reflected.isRefracting = ray.isRefracting;
+                        reflected.mediumCoeffBefore = ray.mediumCoeffBefore;
+                        reflected.mediumCoeffNow = ray.mediumCoeffNow;
+                        reflected.materialIdCurrentlyIn = ray.materialIdCurrentlyIn;
+                        reflected.time = ray.time;
+                        reflected.rayThroughput = ray.rayThroughput * 0.88;
+
+                        float rRpar = (tRay.mediumCoeffNow*cosTheta - 1*cosPhi)/
+                                    (tRay.mediumCoeffNow*cosTheta + 1*cosPhi);
+
+                        float rPpar = (1*cosTheta - tRay.mediumCoeffNow*cosPhi)/
+                                    (1*cosTheta + tRay.mediumCoeffNow*cosPhi);
+
+                        float reflectionRatio = (rPpar*rPpar + rRpar*rRpar)/2;
+                        float transmissionRatio = 1 - reflectionRatio;
+
+                        bool directionSuitable = true;
+
+                        if(_activeCamera.nextEventEstimation)
+                        {
+                            IntersectionReport report;
+
+                            if(TestWorldIntersection(reflected, report, 0, 2000, _intersectionTestEpsilon, backfaceCulling))
+                            {
+                                Object* obj = (Object*) report.hitObject;
+                                for(auto element : _lightObjectPointerVector)
+                                {
+                                    if(obj == element)
+                                        directionSuitable = false;
+                                }
+                            }
+
+                            if(directionSuitable)
+                            {
+                                result.resultColor = reflectionRatio * getReflectance(ray, reflectedRayDir, 
+                                                                    _materials[r.materialId].diffuseReflectance, 
+                                                                    _materials[r.materialId].specularReflectance,
+                                                                    _materials[r.materialId].phongExponent,
+                                                                    r, _materials[r.materialId].degammaFlag,
+                                                                    _activeCamera.gamma,
+                                                                    _materials[r.materialId].hasBrdf, _materials[r.materialId].brdf,
+                                                                    _materials[r.materialId].refractionIndex, _materials[r.materialId].absorptionIndex) *
+                                                                    PathTrace(reflected, backfaceCulling, recursionDepth + 1).resultColor;
+                                result.resultColor += ComputeDiffuseSpecular(r, ray);
+                            }
+                            else
+                            {
+                                result.resultColor = ComputeDiffuseSpecular(r, ray);
+                            }
+                        
+                        }
+                        else
+                        {
+                            result.resultColor = reflectionRatio * getReflectance(ray, reflectedRayDir, 
+                                                                _materials[r.materialId].diffuseReflectance, 
+                                                                _materials[r.materialId].specularReflectance,
+                                                                _materials[r.materialId].phongExponent,
+                                                                r, _materials[r.materialId].degammaFlag,
+                                                                _activeCamera.gamma,
+                                                                _materials[r.materialId].hasBrdf, _materials[r.materialId].brdf,
+                                                                _materials[r.materialId].refractionIndex, _materials[r.materialId].absorptionIndex) *
+                                                                PathTrace(reflected, backfaceCulling, recursionDepth + 1).resultColor;
+                        }                        
+
+                                                                 
+                        result.resultColor =   attenuation * transmissionRatio * getReflectance(ray, transmittedRayDir, 
+                                                                                                _materials[r.materialId].diffuseReflectance, 
+                                                                                                _materials[r.materialId].specularReflectance,
+                                                                                                _materials[r.materialId].phongExponent,
+                                                                                                r, _materials[r.materialId].degammaFlag,
+                                                                                                _activeCamera.gamma,
+                                                                                                _materials[r.materialId].hasBrdf, _materials[r.materialId].brdf,
+                                                                                                _materials[r.materialId].refractionIndex, _materials[r.materialId].absorptionIndex) * 
+                                                                                PathTrace(tRay, backfaceCulling, recursionDepth + 1).resultColor;
+                        result.hit = true;
+
+                        
+                    }
+                    // Only reflection occurs
+                    else
+                    {
+                        Ray reflected(reflectedRayOrigin, reflectedRayDir);
+                        reflected.isRefracting = ray.isRefracting;
+                        reflected.mediumCoeffBefore = ray.mediumCoeffBefore;
+                        reflected.mediumCoeffNow = ray.mediumCoeffNow;
+                        reflected.materialIdCurrentlyIn = ray.materialIdCurrentlyIn;
+                        reflected.time = ray.time;
+                        reflected.rayThroughput = ray.rayThroughput * 0.88;
+                        bool directionSuitable = true;
+
+                        if(_activeCamera.nextEventEstimation)
+                        {
+                            IntersectionReport report;
+
+                            if(TestWorldIntersection(reflected, report, 0, 2000, _intersectionTestEpsilon, backfaceCulling))
+                            {
+                                Object* obj = (Object*) report.hitObject;
+                                for(auto element : _lightObjectPointerVector)
+                                {
+                                    if(obj == element)
+                                        directionSuitable = false;
+                                }
+                            }
+
+                            if(directionSuitable)
+                            {
+                                result.resultColor =  getReflectance(ray, reflectedRayDir, 
+                                                                    _materials[r.materialId].diffuseReflectance, 
+                                                                    _materials[r.materialId].specularReflectance,
+                                                                    _materials[r.materialId].phongExponent,
+                                                                    r, _materials[r.materialId].degammaFlag,
+                                                                    _activeCamera.gamma,
+                                                                    _materials[r.materialId].hasBrdf, _materials[r.materialId].brdf,
+                                                                    _materials[r.materialId].refractionIndex, _materials[r.materialId].absorptionIndex) *
+                                                                    PathTrace(reflected, backfaceCulling, recursionDepth + 1).resultColor;
+                                result.resultColor += ComputeDiffuseSpecular(r, ray);
+                            }
+                            else
+                            {
+                                result.resultColor = ComputeDiffuseSpecular(r, ray);
+                            }
+                        
+                        }
+                        else
+                        {
+                            result.resultColor =  getReflectance(ray, reflectedRayDir, 
+                                                                _materials[r.materialId].diffuseReflectance, 
+                                                                _materials[r.materialId].specularReflectance,
+                                                                _materials[r.materialId].phongExponent,
+                                                                r, _materials[r.materialId].degammaFlag,
+                                                                _activeCamera.gamma,
+                                                                _materials[r.materialId].hasBrdf, _materials[r.materialId].brdf,
+                                                                _materials[r.materialId].refractionIndex, _materials[r.materialId].absorptionIndex) *
+                                                                PathTrace(reflected, backfaceCulling, recursionDepth + 1).resultColor;
+                        }  
+
+                        result.hit = true;                            
+                    }                         
+                }
+
+                // Ray is exiting
+                else if(glm::dot(ray.direction, r.normal) > 0)
+                {
+                    glm::vec3 invertedNormal = -r.normal;
+
+                    glm::vec3 reflectedRayOrigin = r.intersection + invertedNormal * 0.000001f;
+                    glm::vec3 reflectedRayDir    = glm::reflect(ray.direction, invertedNormal);
+
+                    float cosTheta = glm::dot(-ray.direction, invertedNormal);
+                    float coeffRatio = ray.mediumCoeffNow/1;
+
+                    float cosPhiSquared = (1 - coeffRatio*coeffRatio * (1 - cosTheta*cosTheta));
+
+                    // Reflection and transmission both occur
+                    if(cosPhiSquared >= 0)
+                    {
+                        float cosPhi = std::sqrt(cosPhiSquared);
+
+                        // Building transmitted ray
+                        glm::vec3 transmittedRayOrigin = r.intersection - invertedNormal * 0.000001f;            
+                        glm::vec3 transmittedRayDir = (ray.direction + invertedNormal*cosTheta)*coeffRatio - invertedNormal*cosPhi;
+
+                        Ray tRay(transmittedRayOrigin, transmittedRayDir);
+                        tRay.mediumCoeffBefore = ray.mediumCoeffNow;
+                        tRay.mediumCoeffNow = 1;
+                        tRay.isRefracting = false;
+                        tRay.materialIdCurrentlyIn = -1;
+                        tRay.time = ray.time;
+                        tRay.rayThroughput = ray.rayThroughput * 0.88;
+
+                        Ray reflected(reflectedRayOrigin, reflectedRayDir);
+                        reflected.isRefracting = ray.isRefracting;
+                        reflected.mediumCoeffBefore = ray.mediumCoeffBefore;
+                        reflected.mediumCoeffNow = ray.mediumCoeffNow;
+                        reflected.materialIdCurrentlyIn = ray.materialIdCurrentlyIn;
+                        reflected.time = ray.time;
+                        reflected.rayThroughput = ray.rayThroughput * 0.88;
+
+                        float rRpar = (1*cosTheta - tRay.mediumCoeffBefore*cosPhi)/
+                                    (1*cosTheta + tRay.mediumCoeffBefore*cosPhi);
+
+                        float rPpar = (tRay.mediumCoeffBefore*cosTheta - 1*cosPhi)/
+                                    (tRay.mediumCoeffBefore*cosTheta + 1*cosPhi);
+
+                        float reflectionRatio = (rPpar*rPpar + rRpar*rRpar)/2;
+                        float transmissionRatio = 1 - reflectionRatio;
+
+                        result.resultColor = attenuation * reflectionRatio * getReflectance(ray, reflectedRayDir, 
+                                                                                            _materials[r.materialId].diffuseReflectance, 
+                                                                                            _materials[r.materialId].specularReflectance,
+                                                                                            _materials[r.materialId].phongExponent,
+                                                                                            r, _materials[r.materialId].degammaFlag,
+                                                                                            _activeCamera.gamma,
+                                                                                            _materials[r.materialId].hasBrdf, _materials[r.materialId].brdf,
+                                                                                            _materials[r.materialId].refractionIndex, _materials[r.materialId].absorptionIndex) *
+                                                                                            PathTrace(reflected, backfaceCulling, recursionDepth + 1).resultColor 
+                                                                                                                                 
+                                                                                            +
+                                                                 
+                                            attenuation * transmissionRatio * getReflectance(ray, transmittedRayDir, 
+                                                                                                _materials[r.materialId].diffuseReflectance, 
+                                                                                                _materials[r.materialId].specularReflectance,
+                                                                                                _materials[r.materialId].phongExponent,
+                                                                                                r, _materials[r.materialId].degammaFlag,
+                                                                                                _activeCamera.gamma,
+                                                                                                _materials[r.materialId].hasBrdf, _materials[r.materialId].brdf,
+                                                                                                _materials[r.materialId].refractionIndex, _materials[r.materialId].absorptionIndex) * 
+                                                                                PathTrace(tRay, backfaceCulling, recursionDepth + 1).resultColor;
+                        result.hit = true;
+
+                    }
+                    // Only reflection occurs
+                    else
+                    {
+                        Ray reflected(reflectedRayOrigin, reflectedRayDir);
+                        reflected.isRefracting = ray.isRefracting;
+                        reflected.mediumCoeffBefore = ray.mediumCoeffBefore;
+                        reflected.mediumCoeffNow = ray.mediumCoeffNow;
+                        reflected.materialIdCurrentlyIn = ray.materialIdCurrentlyIn;
+                        reflected.time = ray.time;
+                        reflected.rayThroughput = ray.rayThroughput * 0.88;
+                            
+                        result.resultColor = attenuation * getReflectance(ray, reflectedRayDir, 
+                                                            _materials[r.materialId].diffuseReflectance, 
+                                                            _materials[r.materialId].specularReflectance,
+                                                            _materials[r.materialId].phongExponent,
+                                                            r, _materials[r.materialId].degammaFlag,
+                                                            _activeCamera.gamma,
+                                                            _materials[r.materialId].hasBrdf, _materials[r.materialId].brdf,
+                                                            _materials[r.materialId].refractionIndex, _materials[r.materialId].absorptionIndex) *
+                                                            (PathTrace(reflected, backfaceCulling, recursionDepth + 1).resultColor);  
+
+                        result.hit = true; 
+                           
+                    } 
+                }
+
+
+            }
+
+
+        }
+
+    }
+
+    return result;
+    
+}
+
 glm::vec3 Scene::TraceAndFilter(std::vector<RayWithWeigth> rwwVector, int x, int y)
 {
     float stdDev = 1.f/6.f;
@@ -390,8 +812,12 @@ glm::vec3 Scene::TraceAndFilter(std::vector<RayWithWeigth> rwwVector, int x, int
 
     for(size_t i=0; i<rwwVector.size(); i++)
     {
+        RayTraceResult rtResult;
 
-        RayTraceResult rtResult = RayTrace(rwwVector[i].r, false);
+        if(_activeCamera.lightingMode == LightingMode::DIRECT_LIGHTING)
+            rtResult = RayTrace(rwwVector[i].r, false);
+        else if(_activeCamera.lightingMode == LightingMode::PATH_TRACING)
+            rtResult = PathTrace(rwwVector[i].r, false, 0);
 
         if(rtResult.hit)
         {

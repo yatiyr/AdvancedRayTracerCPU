@@ -14,16 +14,14 @@
 class Sphere : public Object
 {
 private:
-    size_t materialId;
+
+public:
     glm::vec3 center;
     float radius;
 
     bool solveQuadratic(const float &a, const float &b, const float &c, float &x0, float& x1);
-
-public:
-
     Sphere(glm::vec3 center, float radius, size_t materialId);
-    bool Intersect(const Ray& r, IntersectionReport& report, float tmin, float tmax, float intersectionEpsilon, bool backfaceCulling);
+    virtual bool Intersect(const Ray& r, IntersectionReport& report, float tmin, float tmax, float intersectionEpsilon, bool backfaceCulling);
 
 };
 

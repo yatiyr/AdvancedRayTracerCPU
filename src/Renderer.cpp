@@ -63,7 +63,7 @@ void Renderer::ToneMap(float* pixels, int width, int height)
             max_lum = lum;
 
 
-        double testLum = std::log(0.00005 + lum);
+        double testLum = std::log(0.000005 + lum);
 
         if(std::isnan(testLum))
             av_lum += 0;

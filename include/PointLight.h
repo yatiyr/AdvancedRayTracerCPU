@@ -13,7 +13,7 @@ public:
     bool ShadowRayIntersection(float tmin, float tmax, float intersectionTestEpsilon, float shadowRayEpsilon, 
                                const IntersectionReport& report, bool backfaceCulling,
                                float time, std::vector<Object *>& objectPointerVector);
-    
+
     glm::vec3 ComputeDiffuseSpecular(const Ray& ray, glm::vec3& diffuseReflectance, glm::vec3& specularReflectance,
                                      const float& phongExponent, const IntersectionReport& report,
                                      float tmin, float tmax, float intersectionTestEpsilon, float shadowRayEpsilon,

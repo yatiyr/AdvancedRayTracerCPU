@@ -40,6 +40,8 @@
 
 #include <DirectionSampler.h>
 
+#include <LightMesh.h>
+#include <LightSphere.h>
 
 struct WorkGroup
 {
@@ -69,6 +71,8 @@ private:
     RandomGenerator* areaLightPositionGenerator;
     RandomGenerator* motionBlurTimeGenerator;
     RandomGenerator* glossyReflectionVarGenerator;
+
+    DirectionSampler* directionSampler;
     
     int _sampleNumber;
     std::vector<Sample> samples;
@@ -105,12 +109,16 @@ private:
 
 
     std::vector<Object*> _objectPointerVector;
+    std::vector<Object*> _lightObjectPointerVector;
 
     std::vector<PointLight>       _pointLights;
     std::vector<AreaLight>        _areaLights;
     std::vector<EnvironmentLight> _environmentLights;
     std::vector<DirectionalLight> _directionalLights;
     std::vector<SpotLight>        _spotLights;
+
+    std::vector<LightMesh>        _lightMeshes;
+    std::vector<LightSphere>      _lightSpheres;
 
     std::vector<Light*> _lightPointerVector;
 
@@ -151,6 +159,8 @@ private:
     glm::vec3 ComputeSpecularComponent(const IntersectionReport& report, const PointLight& light, const Ray& ray);
 
     RayTraceResult RayTrace(const Ray& ray, bool backfaceCulling);
+    RayTraceResult PathTrace(const Ray& ray, bool backfaceCulling, int recursionDepth);
+
     glm::vec3 RecursiveTrace(const Ray& ray, const IntersectionReport& iR, int bounce, bool backfaceCulling);
 
     glm::vec3 TraceAndFilter(std::vector<RayWithWeigth> rwwVector, int x, int y);

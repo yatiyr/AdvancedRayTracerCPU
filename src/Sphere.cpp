@@ -41,6 +41,7 @@ bool Sphere::Intersect(const Ray& r, IntersectionReport& report, float tmin, flo
 
     report.intersection = glm::vec3(-FLT_MAX);
     report.d            = FLT_MAX;
+    report.isLight      = false;
 
     float discriminant = pow(glm::dot(newRay.direction, (newRay.origin - center)), 2) -
                          dot(newRay.direction, newRay.direction) * (glm::dot(newRay.origin - center, newRay.origin - center) -

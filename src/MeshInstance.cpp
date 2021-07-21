@@ -21,10 +21,12 @@ bool MeshInstance::Intersect(const Ray& ray, IntersectionReport& report, float t
     bool test = mesh->bvhRoot->Intersect(newRay, report, tmin, tmax, intersectionEpsilon, mesh->softShadingFlag, nTMIT, backfaceCulling);
 
     report.materialId = materialId;
+    report.isLight    = false;
     if(test)
     {
         report.intersection = ray.origin + ray.direction * report.d;
-
+        report.hitObject    = this;
+        
         if(this->diffuseMap)
         {
             report.replaceAll = false;

@@ -41,6 +41,7 @@ public:
     float mediumCoeffBefore;
     float mediumCoeffNow;
     float rayEnergy;
+    float rayThroughput;
     
     int materialIdCurrentlyIn;
 
