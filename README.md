@@ -34,7 +34,7 @@ During the course we recorded our progress with blog posts, mine is here :
 |<img src="images/pathTracing/diffusePathTracing.jpg" alt="drawing" width="800"/>|
 | *Rendered in approx. 3 hours* |
 
-| **Cornellbox scene with diffuse spheres** |
+| **Veach Ajar Scene** |
 |:--:|
 |<img src="images/pathTracing/veachAjarPathTraced.png" alt="drawing" width="800"/>|
 | *Rendered in approx. 1 day 8 hours* |
