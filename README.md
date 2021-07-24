@@ -4,7 +4,7 @@ This project was implemented during Spring 2020-2021 for Advanced Ray Tracing co
 
 I first tried to implement this project with GLSL compute shaders but failed to follow the homeworks on time. So when I saw that it was tackling my progress, I immediately implemented a CPU version and carried on from there (This happened after 2nd Homework).
 
-At the end of the semester, I have a **pet** ray tracer as a programmer :D.
+At the end of the semester, I have a **pet** ray tracer as a programmer :D. I want to thank to our professor Ahmet Oğuz Akyüz for this amazing course and also to my classmates (I've learnt a lot reading their blog posts).
 
 Feature list:
 

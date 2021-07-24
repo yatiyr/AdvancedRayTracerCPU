@@ -11,7 +11,7 @@
             <FovY>45</FovY>
             <NearDistance>0.1</NearDistance>
             <ImageResolution>512 512</ImageResolution>
-            <NumSamples>100</NumSamples>
+            <NumSamples>900</NumSamples>
             <ImageName>cornellbox_jaroslav_glossy_area_small.exr</ImageName>
             <Tonemap>
                 <TMO>Photographic</TMO>
@@ -19,6 +19,8 @@
                 <Saturation>1.0</Saturation>
                 <Gamma>sRGB</Gamma>
             </Tonemap>
+            <Renderer>PathTracing</Renderer>
+            <RendererParams>NextEventEstimation ImportanceSampling RussianRoulette</RendererParams>            
         </Camera>
     </Cameras>
 
