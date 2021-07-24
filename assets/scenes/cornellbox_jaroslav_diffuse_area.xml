@@ -10,15 +10,17 @@
             <Up>3.73896e-4 0.0542148 0.998529</Up>
             <FovY>45</FovY>
             <NearDistance>0.1</NearDistance>
-            <ImageResolution>512 512</ImageResolution>
-            <NumSamples>100</NumSamples>
+            <ImageResolution>800 800</ImageResolution>
+            <NumSamples>1000</NumSamples>
             <ImageName>cornellbox_jaroslav_diffuse_area.exr</ImageName>
             <Tonemap>
                 <TMO>Photographic</TMO>
                 <TMOOptions>0.18 1</TMOOptions>
                 <Saturation>1.0</Saturation>
-                <Gamma>sRGB</Gamma>
+                <Gamma>sRGB</Gamma>                 
             </Tonemap>
+            <Renderer>PathTracing</Renderer>
+            <RendererParams>NextEventEstimation ImportanceSampling RussianRoulette</RendererParams>              
         </Camera>
     </Cameras>
 
@@ -48,25 +50,40 @@
         </Material>
         <Material id="3" BRDF="1"> <!-- Green left wall -->
             <AmbientReflectance>0 0 0</AmbientReflectance>
-            <DiffuseReflectance>0.156863 0.803922 0.172549</DiffuseReflectance>
+            <DiffuseReflectance>0.803922 0.803922 0.803922</DiffuseReflectance>
             <SpecularReflectance>0 0 0</SpecularReflectance>
         </Material>
         <Material id="4" BRDF="1"> <!-- Red right wall -->
             <AmbientReflectance>0 0 0</AmbientReflectance>
-            <DiffuseReflectance>0.803922 0.152941 0.152941</DiffuseReflectance>
+            <DiffuseReflectance>0.803922 0.803922 0.803922</DiffuseReflectance>
             <SpecularReflectance>0 0 0</SpecularReflectance>
         </Material>
         <Material id="5" BRDF="2"> <!-- Yellow sphere -->
             <AmbientReflectance>0 0 0</AmbientReflectance>
-            <DiffuseReflectance>0.803922 0.803922 0.152941</DiffuseReflectance>
+            <DiffuseReflectance>0.803922 0.803922 0.803922</DiffuseReflectance>
             <SpecularReflectance>0 0 0</SpecularReflectance>
         </Material>
         <Material id="6" BRDF="3"> <!-- Blue sphere -->
             <AmbientReflectance>0 0 0</AmbientReflectance>
-            <DiffuseReflectance>0.152941 0.152941 0.803922</DiffuseReflectance>
+            <DiffuseReflectance>0.803922 0.152941 0.803922</DiffuseReflectance>
             <SpecularReflectance>0 0 0</SpecularReflectance>
         </Material>
+        <Material id="7" BRDF="2" type="dielectric">
+            <AmbientReflectance>0 0 0</AmbientReflectance>
+            <DiffuseReflectance>0 0 0</DiffuseReflectance>
+            <SpecularReflectance>0.3 0.3 0.3</SpecularReflectance>
+            <AbsorptionCoefficient>0.01 0.01 0.01</AbsorptionCoefficient>
+            <RefractionIndex>1.55</RefractionIndex>
+        </Material>        
     </Materials>
+
+    <Transformations>
+        <Translation id="1">0.2 0 -1</Translation>
+        <Translation id="2">0.4 0.3 0.2</Translation>
+        <Translation id="3">-0.4 -0.3 0.2</Translation>
+        <Translation id="4">-1.4 -0.0 0.0</Translation>                     
+        <Scaling id="1">5 1 1</Scaling>
+    </Transformations>    
 
     <VertexData>
 		-1.27029  1.30455 -1.28002
@@ -79,6 +96,7 @@
 		-1.27029 -1.25549  1.28002
         -0.53885  0.02453 -0.78002
 		 0.55831  0.66454 -0.78002
+		 0.0      0.0      0.0         
     </VertexData>
 
     <Objects>
@@ -110,16 +128,16 @@
 				2 3 0
             </Faces>
         </Mesh>
-        <LightMesh id="1"> <!-- Ceiling is a light -->
-            <Material>1</Material>
-            <Radiance>1.21 1.21 1.21</Radiance>
+        <Mesh id="1"> <!-- Ceiling is a light -->
+            <Material>4</Material>
+            <Radiance>0.001 0.001 0.001</Radiance>
             <Faces vertexOffset="1">
 				2 6 7
 				7 3 2
             </Faces>
-        </LightMesh>
+        </Mesh>
         <Sphere id="1">
-            <Material>5</Material>
+            <Material>7</Material>
             <Center>9</Center>
             <Radius>0.5</Radius>
         </Sphere>
@@ -128,5 +146,27 @@
             <Center>10</Center>
             <Radius>0.5</Radius>
         </Sphere>
+
+        <LightSphere id="1"> 
+            <Material>1</Material>
+            <Center>11</Center>
+            <Radius>0.05</Radius>
+            <Radiance>250.831 250.831 250.831</Radiance>
+            <Transformations>t1</Transformations>
+        </LightSphere>
+        <LightSphere id="2"> 
+            <Material>1</Material>
+            <Center>11</Center>
+            <Radius>0.05</Radius>
+            <Radiance>250.831 0.831 250.831</Radiance>
+            <Transformations>t2</Transformations>
+        </LightSphere>  
+        <LightSphere id="3"> 
+            <Material>1</Material>
+            <Center>11</Center>
+            <Radius>0.05</Radius>
+            <Radiance>600.831 1.831 0.831</Radiance>
+            <Transformations>t3</Transformations>
+        </LightSphere>                          
     </Objects>
 </Scene>

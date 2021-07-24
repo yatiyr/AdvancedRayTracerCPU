@@ -34,10 +34,16 @@ During the course we recorded our progress with blog posts, mine is here :
 |<img src="images/pathTracing/diffusePathTracing.jpg" alt="drawing" width="800"/>|
 | *Rendered in approx. 3 hours* |
 
+| **Cornellbox scene with diffuse a glass sphere** |
+|:--:|
+|<img src="images/pathTracing/glass_next_importance_russian_tonemapped.png" alt="drawing" width="800"/>|
+| *Rendered in approx. 6 hours* |
+
 | **Veach Ajar Scene** |
 |:--:|
 |<img src="images/pathTracing/veachAjarPathTraced.png" alt="drawing" width="800"/>|
 | *Rendered in approx. 1 day 8 hours* |
+
 
 
 
