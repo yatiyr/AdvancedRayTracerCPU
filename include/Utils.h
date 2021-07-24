@@ -685,6 +685,8 @@ inline void SceneReadMaterials(tinyxml2::XMLNode* root, std::vector<Material>& _
         stream >> material.absorptionIndex;
         stream >> material.phongExponent;
         stream >> material.roughness;
+        
+        
 
         material.type = -1;
 

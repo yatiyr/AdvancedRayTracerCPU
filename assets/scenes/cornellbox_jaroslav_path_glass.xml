@@ -4,62 +4,6 @@
     <BackgroundColor>0 0 0</BackgroundColor>
 
     <Cameras>
-        <Camera id="1" type="lookAt" handedness="right">
-            <Position>-0.0439815 -4.12529 0.222539</Position>
-            <Gaze>0.00688625 0.998505 -0.0542161</Gaze>
-            <Up>3.73896e-4 0.0542148 0.998529</Up>
-            <FovY>45</FovY>
-            <NearDistance>0.1</NearDistance>
-            <ImageResolution>512 512</ImageResolution>
-            <NumSamples>100</NumSamples>
-            <ImageName>glass_next.exr</ImageName>
-            <Tonemap>
-                <TMO>Photographic</TMO>
-                <TMOOptions>0.18 1</TMOOptions>
-                <Saturation>1.0</Saturation>
-                <Gamma>sRGB</Gamma>
-            </Tonemap>
-            <Renderer>PathTracing</Renderer>
-            <RendererParams>NextEventEstimation</RendererParams>
-        </Camera>
-
-        <Camera id="2" type="lookAt" handedness="right">
-            <Position>-0.0439815 -4.12529 0.222539</Position>
-            <Gaze>0.00688625 0.998505 -0.0542161</Gaze>
-            <Up>3.73896e-4 0.0542148 0.998529</Up>
-            <FovY>45</FovY>
-            <NearDistance>0.1</NearDistance>
-            <ImageResolution>512 512</ImageResolution>
-            <NumSamples>100</NumSamples>
-            <ImageName>glass_next_russian.exr</ImageName>
-            <Tonemap>
-                <TMO>Photographic</TMO>
-                <TMOOptions>0.18 1</TMOOptions>
-                <Saturation>1.0</Saturation>
-                <Gamma>sRGB</Gamma>
-            </Tonemap>
-            <Renderer>PathTracing</Renderer>
-            <RendererParams>NextEventEstimation RussianRoulette</RendererParams>
-        </Camera>
-
-        <Camera id="3" type="lookAt" handedness="right">
-            <Position>-0.0439815 -4.12529 0.222539</Position>
-            <Gaze>0.00688625 0.998505 -0.0542161</Gaze>
-            <Up>3.73896e-4 0.0542148 0.998529</Up>
-            <FovY>45</FovY>
-            <NearDistance>0.1</NearDistance>
-            <ImageResolution>512 512</ImageResolution>
-            <NumSamples>100</NumSamples>
-            <ImageName>glass_next_importance.exr</ImageName>
-            <Tonemap>
-                <TMO>Photographic</TMO>
-                <TMOOptions>0.18 1</TMOOptions>
-                <Saturation>1.0</Saturation>
-                <Gamma>sRGB</Gamma>
-            </Tonemap>
-            <Renderer>PathTracing</Renderer>
-            <RendererParams>NextEventEstimation ImportanceSampling</RendererParams>
-        </Camera>
 
         <Camera id="4" type="lookAt" handedness="right">
             <Position>-0.0439815 -4.12529 0.222539</Position>
@@ -68,7 +12,7 @@
             <FovY>45</FovY>
             <NearDistance>0.1</NearDistance>
             <ImageResolution>512 512</ImageResolution>
-            <NumSamples>100</NumSamples>
+            <NumSamples>36</NumSamples>
             <ImageName>glass_next_importance_russian.exr</ImageName>
             <Tonemap>
                 <TMO>Photographic</TMO>
@@ -78,82 +22,6 @@
             </Tonemap>
             <Renderer>PathTracing</Renderer>
             <RendererParams>NextEventEstimation ImportanceSampling RussianRoulette</RendererParams>
-        </Camera>
-
-        <Camera id="5" type="lookAt" handedness="right">
-            <Position>-0.0439815 -4.12529 0.222539</Position>
-            <Gaze>0.00688625 0.998505 -0.0542161</Gaze>
-            <Up>3.73896e-4 0.0542148 0.998529</Up>
-            <FovY>45</FovY>
-            <NearDistance>0.1</NearDistance>
-            <ImageResolution>512 512</ImageResolution>
-            <NumSamples>100</NumSamples>
-            <ImageName>glass.exr</ImageName>
-            <Tonemap>
-                <TMO>Photographic</TMO>
-                <TMOOptions>0.18 1</TMOOptions>
-                <Saturation>1.0</Saturation>
-                <Gamma>sRGB</Gamma>
-            </Tonemap>
-            <Renderer>PathTracing</Renderer>
-            <RendererParams></RendererParams>
-        </Camera>
-
-        <Camera id="6" type="lookAt" handedness="right">
-            <Position>-0.0439815 -4.12529 0.222539</Position>
-            <Gaze>0.00688625 0.998505 -0.0542161</Gaze>
-            <Up>3.73896e-4 0.0542148 0.998529</Up>
-            <FovY>45</FovY>
-            <NearDistance>0.1</NearDistance>
-            <ImageResolution>512 512</ImageResolution>
-            <NumSamples>100</NumSamples>
-            <ImageName>glass_russian.exr</ImageName>
-            <Tonemap>
-                <TMO>Photographic</TMO>
-                <TMOOptions>0.18 1</TMOOptions>
-                <Saturation>1.0</Saturation>
-                <Gamma>sRGB</Gamma>
-            </Tonemap>
-            <Renderer>PathTracing</Renderer>
-            <RendererParams>RussianRoulette</RendererParams>
-        </Camera>
-
-        <Camera id="7" type="lookAt" handedness="right">
-            <Position>-0.0439815 -4.12529 0.222539</Position>
-            <Gaze>0.00688625 0.998505 -0.0542161</Gaze>
-            <Up>3.73896e-4 0.0542148 0.998529</Up>
-            <FovY>45</FovY>
-            <NearDistance>0.1</NearDistance>
-            <ImageResolution>512 512</ImageResolution>
-            <NumSamples>100</NumSamples>
-            <ImageName>glass_importance.exr</ImageName>
-            <Tonemap>
-                <TMO>Photographic</TMO>
-                <TMOOptions>0.18 1</TMOOptions>
-                <Saturation>1.0</Saturation>
-                <Gamma>sRGB</Gamma>
-            </Tonemap>
-            <Renderer>PathTracing</Renderer>
-            <RendererParams>ImportanceSampling</RendererParams>
-        </Camera>
-
-        <Camera id="8" type="lookAt" handedness="right">
-            <Position>-0.0439815 -4.12529 0.222539</Position>
-            <Gaze>0.00688625 0.998505 -0.0542161</Gaze>
-            <Up>3.73896e-4 0.0542148 0.998529</Up>
-            <FovY>45</FovY>
-            <NearDistance>0.1</NearDistance>
-            <ImageResolution>512 512</ImageResolution>
-            <NumSamples>100</NumSamples>
-            <ImageName>glass_importance_russian.exr</ImageName>
-            <Tonemap>
-                <TMO>Photographic</TMO>
-                <TMOOptions>0.18 1</TMOOptions>
-                <Saturation>1.0</Saturation>
-                <Gamma>sRGB</Gamma>
-            </Tonemap>
-            <Renderer>PathTracing</Renderer>
-            <RendererParams>ImportanceSampling RussianRoulette</RendererParams>
         </Camera>
 
     </Cameras>

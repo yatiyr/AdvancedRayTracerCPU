@@ -113,7 +113,7 @@ glm::vec3 LightMesh::ComputeDiffuseSpecular(const Ray& ray, glm::vec3& diffuseRe
 
     result += brdfComponent * 
               std::max(0.0f, glm::dot(wi, report.normal)) *
-              ((radiance * std::max(0.2f ,std::fabs(glm::dot(l, randomNormal))) * totalArea)/(lightDistance*lightDistance));
+              ((radiance * std::fabs(glm::dot(l, randomNormal)) * totalArea)/(std::max(1.0f,lightDistance*lightDistance)));
                                     
 
     }
@@ -128,7 +128,7 @@ void LightMesh::SampleRandomPosition(const Ray& ray, const IntersectionReport& r
     // closer to 1 because triangles are sorted according
     // to their areas and bigger area triangles should have
     // more probability to be selected.
-    float randomValue = std::pow(this->randomGenerator->Generate(), 1.0/1.0);
+    float randomValue = std::pow(this->randomGenerator->Generate(), 1.0/2.0);
 
     randomValue *= this->triangleList.size() - 1;
     int index = std::round(randomValue);
@@ -154,9 +154,6 @@ void LightMesh::SampleRandomPosition(const Ray& ray, const IntersectionReport& r
 
     glm::vec3 worldNormal = (tMatIT * glm::vec4(selectedTriangle.normal, 0.0f));
     worldNormal = glm::normalize(worldNormal);
-
-    glm::vec3 dir = glm::normalize(worldPoint - report.intersection);
-    glm::vec3 newOrigin = report.intersection;
 
     this->randomPosition = worldPoint;
     this->randomNormal   = worldNormal;

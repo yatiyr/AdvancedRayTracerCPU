@@ -109,14 +109,14 @@ void Scene::RenderThread()
 
                     //Ray pR = ComputePrimaryRay(coords.x, coords.y);
                     //glm::vec3 pixel = RayTrace(pR);
+
                     WritePixelCoord(coords.x, coords.y, filteredColor);
 
-/*
                     {
                         std::lock_guard<std::mutex> lock(progressLock);
                         std::cout << "Progress: [" << std::setprecision(1) << std::fixed << (count / (float)worksize) * 100.0 << "% ] \r";
                         std::cout.flush();
-                    } */
+                    }
                 }
             }));
     }
@@ -394,17 +394,21 @@ RayTraceResult Scene::PathTrace(const Ray& ray, bool backfaceCulling, int recurs
     RayTraceResult result;
     result.hit = false;
     result.resultColor = glm::vec3(0.0f);
+    float rrProb = 1.0f;
+    float rayEnergyLoseFactor = 0.95;
     // Checking stopping conditions
     if(_activeCamera.russianRoulette && recursionDepth > this->_maxRecursionDepth)
     {
         float randomNumber = randomVariableGenerator->Generate();
-        float q = std::sqrt(1 - ray.rayThroughput);
+        float q = 1 - ray.rayThroughput;
         if(randomNumber <= q)
         {
             result.hit = false;
             result.resultColor = glm::vec3(0.0f);
             return result;
         }
+
+        rrProb = 1 - q;
             
     }
     else if(!_activeCamera.russianRoulette && recursionDepth > this->_maxRecursionDepth)
@@ -443,10 +447,15 @@ RayTraceResult Scene::PathTrace(const Ray& ray, bool backfaceCulling, int recurs
             if(ray.materialIdCurrentlyIn != -1)
             {
                 float dist = glm::length(ray.origin - r.intersection);
-                attenuation.x = std::pow((float)EULER, std::log(_materials[ray.materialIdCurrentlyIn].absorptionCoefficient.x) *dist);
-                attenuation.y = std::pow((float)EULER, std::log(_materials[ray.materialIdCurrentlyIn].absorptionCoefficient.y) *dist);
-                attenuation.z = std::pow((float)EULER, std::log(_materials[ray.materialIdCurrentlyIn].absorptionCoefficient.z) *dist);
-                                
+
+                float cx = _materials[ray.materialIdCurrentlyIn].absorptionCoefficient.x;
+                float cy = _materials[ray.materialIdCurrentlyIn].absorptionCoefficient.y;
+                float cz = _materials[ray.materialIdCurrentlyIn].absorptionCoefficient.z;
+
+                attenuation.x = std::pow((float)EULER, -cx * dist);
+                attenuation.y = std::pow((float)EULER, -cy * dist);
+                attenuation.z = std::pow((float)EULER, -cz * dist);
+
             }
 
             // Diffuse
@@ -467,7 +476,7 @@ RayTraceResult Scene::PathTrace(const Ray& ray, bool backfaceCulling, int recurs
                     probabilityInv  = 2 * M_PI;                         
                 }
                 Ray reflected(reflectedRayOrigin, reflectedRayDir);
-                reflected.rayThroughput = ray.rayThroughput * 0.88;
+                reflected.rayThroughput = ray.rayThroughput * rayEnergyLoseFactor;
                 bool directionSuitable = true;
 
                 if(_activeCamera.nextEventEstimation)
@@ -496,6 +505,7 @@ RayTraceResult Scene::PathTrace(const Ray& ray, bool backfaceCulling, int recurs
                                                             _materials[r.materialId].refractionIndex, _materials[r.materialId].absorptionIndex) *
                                                             PathTrace(reflected, backfaceCulling, recursionDepth + 1).resultColor;
                         result.resultColor += ComputeDiffuseSpecular(r, ray);
+                        result.resultColor /= rrProb;
                         result.hit = true;
                     }
                     else
@@ -517,6 +527,7 @@ RayTraceResult Scene::PathTrace(const Ray& ray, bool backfaceCulling, int recurs
                                                         _materials[r.materialId].refractionIndex, _materials[r.materialId].absorptionIndex) *
                                                         PathTrace(reflected, backfaceCulling, recursionDepth + 1).resultColor;
                     result.hit = true;
+                    result.resultColor /= rrProb;          
                 }
 
             }
@@ -527,7 +538,7 @@ RayTraceResult Scene::PathTrace(const Ray& ray, bool backfaceCulling, int recurs
                 // Ray is entering
                 if(glm::dot(ray.direction, r.normal) < 0)
                 {
-                    glm::vec3 reflectedRayOrigin = r.intersection + r.normal * 0.000001f;
+                    glm::vec3 reflectedRayOrigin = r.intersection + r.normal * 0.01f;
                     glm::vec3 reflectedRayDir    = glm::normalize(glm::reflect(ray.direction, r.normal));
 
                     float cosTheta = glm::dot(-ray.direction, r.normal);
@@ -541,7 +552,7 @@ RayTraceResult Scene::PathTrace(const Ray& ray, bool backfaceCulling, int recurs
                         float cosPhi = std::sqrt(cosPhiSquared);
 
                         // Building transmitted ray
-                        glm::vec3 transmittedRayOrigin = r.intersection - r.normal * 0.000001f;            
+                        glm::vec3 transmittedRayOrigin = r.intersection - r.normal * 0.01f;            
                         glm::vec3 transmittedRayDir = (ray.direction + r.normal*cosTheta)*coeffRatio - r.normal*cosPhi;
 
                         Ray tRay(transmittedRayOrigin, transmittedRayDir);
@@ -550,7 +561,7 @@ RayTraceResult Scene::PathTrace(const Ray& ray, bool backfaceCulling, int recurs
                         tRay.isRefracting = true;
                         tRay.materialIdCurrentlyIn = r.materialId;
                         tRay.time = ray.time;
-                        tRay.rayThroughput = ray.rayThroughput * 0.88;
+                        tRay.rayThroughput = ray.rayThroughput * rayEnergyLoseFactor;
 
                         Ray reflected(reflectedRayOrigin, reflectedRayDir);
                         reflected.isRefracting = ray.isRefracting;
@@ -558,7 +569,7 @@ RayTraceResult Scene::PathTrace(const Ray& ray, bool backfaceCulling, int recurs
                         reflected.mediumCoeffNow = ray.mediumCoeffNow;
                         reflected.materialIdCurrentlyIn = ray.materialIdCurrentlyIn;
                         reflected.time = ray.time;
-                        reflected.rayThroughput = ray.rayThroughput * 0.88;
+                        reflected.rayThroughput = ray.rayThroughput * rayEnergyLoseFactor;
 
                         float rRpar = (tRay.mediumCoeffNow*cosTheta - 1*cosPhi)/
                                     (tRay.mediumCoeffNow*cosTheta + 1*cosPhi);
@@ -575,7 +586,7 @@ RayTraceResult Scene::PathTrace(const Ray& ray, bool backfaceCulling, int recurs
                         {
                             IntersectionReport report;
 
-                            if(TestWorldIntersection(reflected, report, 0, 2000, _intersectionTestEpsilon, backfaceCulling))
+                            if(TestWorldIntersection(reflected, report, 0, 9000, _intersectionTestEpsilon, backfaceCulling))
                             {
                                 Object* obj = (Object*) report.hitObject;
                                 for(auto element : _lightObjectPointerVector)
@@ -587,46 +598,25 @@ RayTraceResult Scene::PathTrace(const Ray& ray, bool backfaceCulling, int recurs
 
                             if(directionSuitable)
                             {
-                                result.resultColor = reflectionRatio * getReflectance(ray, reflectedRayDir, 
-                                                                    _materials[r.materialId].diffuseReflectance, 
-                                                                    _materials[r.materialId].specularReflectance,
-                                                                    _materials[r.materialId].phongExponent,
-                                                                    r, _materials[r.materialId].degammaFlag,
-                                                                    _activeCamera.gamma,
-                                                                    _materials[r.materialId].hasBrdf, _materials[r.materialId].brdf,
-                                                                    _materials[r.materialId].refractionIndex, _materials[r.materialId].absorptionIndex) *
-                                                                    PathTrace(reflected, backfaceCulling, recursionDepth + 1).resultColor;
+                                result.resultColor = reflectionRatio * PathTrace(reflected, backfaceCulling, recursionDepth + 1).resultColor;
                                 result.resultColor += ComputeDiffuseSpecular(r, ray);
+                                result.resultColor /= rrProb;                                
                             }
                             else
                             {
                                 result.resultColor = ComputeDiffuseSpecular(r, ray);
+                                result.resultColor /= rrProb;                              
                             }
                         
                         }
                         else
                         {
-                            result.resultColor = reflectionRatio * getReflectance(ray, reflectedRayDir, 
-                                                                _materials[r.materialId].diffuseReflectance, 
-                                                                _materials[r.materialId].specularReflectance,
-                                                                _materials[r.materialId].phongExponent,
-                                                                r, _materials[r.materialId].degammaFlag,
-                                                                _activeCamera.gamma,
-                                                                _materials[r.materialId].hasBrdf, _materials[r.materialId].brdf,
-                                                                _materials[r.materialId].refractionIndex, _materials[r.materialId].absorptionIndex) *
-                                                                PathTrace(reflected, backfaceCulling, recursionDepth + 1).resultColor;
+                            result.resultColor = reflectionRatio * PathTrace(reflected, backfaceCulling, recursionDepth + 1).resultColor;
                         }                        
 
                                                                  
-                        result.resultColor =   attenuation * transmissionRatio * getReflectance(ray, transmittedRayDir, 
-                                                                                                _materials[r.materialId].diffuseReflectance, 
-                                                                                                _materials[r.materialId].specularReflectance,
-                                                                                                _materials[r.materialId].phongExponent,
-                                                                                                r, _materials[r.materialId].degammaFlag,
-                                                                                                _activeCamera.gamma,
-                                                                                                _materials[r.materialId].hasBrdf, _materials[r.materialId].brdf,
-                                                                                                _materials[r.materialId].refractionIndex, _materials[r.materialId].absorptionIndex) * 
-                                                                                PathTrace(tRay, backfaceCulling, recursionDepth + 1).resultColor;
+                        result.resultColor +=  transmissionRatio * PathTrace(tRay, backfaceCulling, recursionDepth + 1).resultColor;
+                        result.resultColor /= rrProb;
                         result.hit = true;
 
                         
@@ -640,7 +630,7 @@ RayTraceResult Scene::PathTrace(const Ray& ray, bool backfaceCulling, int recurs
                         reflected.mediumCoeffNow = ray.mediumCoeffNow;
                         reflected.materialIdCurrentlyIn = ray.materialIdCurrentlyIn;
                         reflected.time = ray.time;
-                        reflected.rayThroughput = ray.rayThroughput * 0.88;
+                        reflected.rayThroughput = ray.rayThroughput * rayEnergyLoseFactor;
                         bool directionSuitable = true;
 
                         if(_activeCamera.nextEventEstimation)
@@ -659,34 +649,21 @@ RayTraceResult Scene::PathTrace(const Ray& ray, bool backfaceCulling, int recurs
 
                             if(directionSuitable)
                             {
-                                result.resultColor =  getReflectance(ray, reflectedRayDir, 
-                                                                    _materials[r.materialId].diffuseReflectance, 
-                                                                    _materials[r.materialId].specularReflectance,
-                                                                    _materials[r.materialId].phongExponent,
-                                                                    r, _materials[r.materialId].degammaFlag,
-                                                                    _activeCamera.gamma,
-                                                                    _materials[r.materialId].hasBrdf, _materials[r.materialId].brdf,
-                                                                    _materials[r.materialId].refractionIndex, _materials[r.materialId].absorptionIndex) *
-                                                                    PathTrace(reflected, backfaceCulling, recursionDepth + 1).resultColor;
+                                result.resultColor =  PathTrace(reflected, backfaceCulling, recursionDepth + 1).resultColor;
                                 result.resultColor += ComputeDiffuseSpecular(r, ray);
+                                result.resultColor /= rrProb;                                
                             }
                             else
                             {
                                 result.resultColor = ComputeDiffuseSpecular(r, ray);
+                                result.resultColor /= rrProb;                               
                             }
                         
                         }
                         else
                         {
-                            result.resultColor =  getReflectance(ray, reflectedRayDir, 
-                                                                _materials[r.materialId].diffuseReflectance, 
-                                                                _materials[r.materialId].specularReflectance,
-                                                                _materials[r.materialId].phongExponent,
-                                                                r, _materials[r.materialId].degammaFlag,
-                                                                _activeCamera.gamma,
-                                                                _materials[r.materialId].hasBrdf, _materials[r.materialId].brdf,
-                                                                _materials[r.materialId].refractionIndex, _materials[r.materialId].absorptionIndex) *
-                                                                PathTrace(reflected, backfaceCulling, recursionDepth + 1).resultColor;
+                            result.resultColor +=  PathTrace(reflected, backfaceCulling, recursionDepth + 1).resultColor;
+                            result.resultColor /= rrProb;                                                                
                         }  
 
                         result.hit = true;                            
@@ -698,7 +675,7 @@ RayTraceResult Scene::PathTrace(const Ray& ray, bool backfaceCulling, int recurs
                 {
                     glm::vec3 invertedNormal = -r.normal;
 
-                    glm::vec3 reflectedRayOrigin = r.intersection + invertedNormal * 0.000001f;
+                    glm::vec3 reflectedRayOrigin = r.intersection + invertedNormal * 0.01f;
                     glm::vec3 reflectedRayDir    = glm::reflect(ray.direction, invertedNormal);
 
                     float cosTheta = glm::dot(-ray.direction, invertedNormal);
@@ -712,7 +689,7 @@ RayTraceResult Scene::PathTrace(const Ray& ray, bool backfaceCulling, int recurs
                         float cosPhi = std::sqrt(cosPhiSquared);
 
                         // Building transmitted ray
-                        glm::vec3 transmittedRayOrigin = r.intersection - invertedNormal * 0.000001f;            
+                        glm::vec3 transmittedRayOrigin = r.intersection - invertedNormal * 0.01f;            
                         glm::vec3 transmittedRayDir = (ray.direction + invertedNormal*cosTheta)*coeffRatio - invertedNormal*cosPhi;
 
                         Ray tRay(transmittedRayOrigin, transmittedRayDir);
@@ -721,7 +698,7 @@ RayTraceResult Scene::PathTrace(const Ray& ray, bool backfaceCulling, int recurs
                         tRay.isRefracting = false;
                         tRay.materialIdCurrentlyIn = -1;
                         tRay.time = ray.time;
-                        tRay.rayThroughput = ray.rayThroughput * 0.88;
+                        tRay.rayThroughput = ray.rayThroughput * rayEnergyLoseFactor;
 
                         Ray reflected(reflectedRayOrigin, reflectedRayDir);
                         reflected.isRefracting = ray.isRefracting;
@@ -729,7 +706,7 @@ RayTraceResult Scene::PathTrace(const Ray& ray, bool backfaceCulling, int recurs
                         reflected.mediumCoeffNow = ray.mediumCoeffNow;
                         reflected.materialIdCurrentlyIn = ray.materialIdCurrentlyIn;
                         reflected.time = ray.time;
-                        reflected.rayThroughput = ray.rayThroughput * 0.88;
+                        reflected.rayThroughput = ray.rayThroughput * rayEnergyLoseFactor;
 
                         float rRpar = (1*cosTheta - tRay.mediumCoeffBefore*cosPhi)/
                                     (1*cosTheta + tRay.mediumCoeffBefore*cosPhi);
@@ -740,27 +717,12 @@ RayTraceResult Scene::PathTrace(const Ray& ray, bool backfaceCulling, int recurs
                         float reflectionRatio = (rPpar*rPpar + rRpar*rRpar)/2;
                         float transmissionRatio = 1 - reflectionRatio;
 
-                        result.resultColor = attenuation * reflectionRatio * getReflectance(ray, reflectedRayDir, 
-                                                                                            _materials[r.materialId].diffuseReflectance, 
-                                                                                            _materials[r.materialId].specularReflectance,
-                                                                                            _materials[r.materialId].phongExponent,
-                                                                                            r, _materials[r.materialId].degammaFlag,
-                                                                                            _activeCamera.gamma,
-                                                                                            _materials[r.materialId].hasBrdf, _materials[r.materialId].brdf,
-                                                                                            _materials[r.materialId].refractionIndex, _materials[r.materialId].absorptionIndex) *
-                                                                                            PathTrace(reflected, backfaceCulling, recursionDepth + 1).resultColor 
+                        result.resultColor = reflectionRatio * PathTrace(reflected, backfaceCulling, recursionDepth + 1).resultColor * attenuation
                                                                                                                                  
                                                                                             +
                                                                  
-                                            attenuation * transmissionRatio * getReflectance(ray, transmittedRayDir, 
-                                                                                                _materials[r.materialId].diffuseReflectance, 
-                                                                                                _materials[r.materialId].specularReflectance,
-                                                                                                _materials[r.materialId].phongExponent,
-                                                                                                r, _materials[r.materialId].degammaFlag,
-                                                                                                _activeCamera.gamma,
-                                                                                                _materials[r.materialId].hasBrdf, _materials[r.materialId].brdf,
-                                                                                                _materials[r.materialId].refractionIndex, _materials[r.materialId].absorptionIndex) * 
-                                                                                PathTrace(tRay, backfaceCulling, recursionDepth + 1).resultColor;
+                                             transmissionRatio * PathTrace(tRay, backfaceCulling, recursionDepth + 1).resultColor * attenuation;
+                        result.resultColor /= rrProb;                                             
                         result.hit = true;
 
                     }
@@ -773,19 +735,12 @@ RayTraceResult Scene::PathTrace(const Ray& ray, bool backfaceCulling, int recurs
                         reflected.mediumCoeffNow = ray.mediumCoeffNow;
                         reflected.materialIdCurrentlyIn = ray.materialIdCurrentlyIn;
                         reflected.time = ray.time;
-                        reflected.rayThroughput = ray.rayThroughput * 0.88;
+                        reflected.rayThroughput = ray.rayThroughput * rayEnergyLoseFactor;
                             
-                        result.resultColor = attenuation * getReflectance(ray, reflectedRayDir, 
-                                                            _materials[r.materialId].diffuseReflectance, 
-                                                            _materials[r.materialId].specularReflectance,
-                                                            _materials[r.materialId].phongExponent,
-                                                            r, _materials[r.materialId].degammaFlag,
-                                                            _activeCamera.gamma,
-                                                            _materials[r.materialId].hasBrdf, _materials[r.materialId].brdf,
-                                                            _materials[r.materialId].refractionIndex, _materials[r.materialId].absorptionIndex) *
-                                                            (PathTrace(reflected, backfaceCulling, recursionDepth + 1).resultColor);  
+                        result.resultColor = (PathTrace(reflected, backfaceCulling, recursionDepth + 1).resultColor) * attenuation;
+                        result.resultColor /= rrProb;                                                              
 
-                        result.hit = true; 
+                        result.hit = true;                       
                            
                     } 
                 }
@@ -793,10 +748,88 @@ RayTraceResult Scene::PathTrace(const Ray& ray, bool backfaceCulling, int recurs
 
             }
 
+            // Conductor
+            else if(_materials[r.materialId].type == 2)
+            {
+                glm::vec3 reflectedRayOrigin = r.intersection + r.normal*_shadowRayEpsilon;
+                glm::vec3 reflectedRayDir    = glm::normalize(glm::reflect(ray.direction, r.normal));
+                float cosTheta = glm::dot(ray.direction, r.normal);
+                float aI = _materials[r.materialId].absorptionIndex;
+                float rI = _materials[r.materialId].refractionIndex;
+
+
+                float rS = ((rI*rI + aI*aI) - 2*rI*cosTheta + (cosTheta*cosTheta))/
+                        ((rI*rI + aI*aI) + 2*rI*cosTheta + (cosTheta*cosTheta));
+
+                float rP = ((rI*rI + aI*aI)*(cosTheta*cosTheta) - 2*rI*cosTheta + 1)/
+                        ((rI*rI + aI*aI)*(cosTheta*cosTheta) + 2*rI*cosTheta + 1);
+
+                float reflectionRatio = (rS + rP)/2;
+
+                OrthonormalBasis basis = GiveOrthonormalBasis(reflectedRayDir);
+                float randomOffsetU = glossyReflectionVarGenerator->Generate();
+                float randomOffsetV = glossyReflectionVarGenerator->Generate();
+
+                reflectedRayDir = reflectedRayDir + _materials[r.materialId].roughness*(randomOffsetU*basis.u + randomOffsetV*basis.v);
+                
+                Ray reflected(reflectedRayOrigin, reflectedRayDir);
+                reflected.isRefracting = ray.isRefracting;
+                reflected.mediumCoeffBefore = ray.mediumCoeffBefore;
+                reflected.mediumCoeffNow    = ray.mediumCoeffNow;
+                reflected.materialIdCurrentlyIn = ray.materialIdCurrentlyIn;
+                reflected.time = ray.time;
+
+                reflected.rayThroughput = ray.rayThroughput * rayEnergyLoseFactor;
+                bool directionSuitable = true;
+
+                if(_activeCamera.nextEventEstimation)
+                {
+                    IntersectionReport report;
+
+                    if(TestWorldIntersection(reflected, report, 0, 6000, _intersectionTestEpsilon, backfaceCulling))
+                    {
+                        Object* obj = (Object*) report.hitObject;
+                        for(auto element : _lightObjectPointerVector)
+                        {
+                            if(obj == element)
+                                directionSuitable = false;
+                        }
+                    }
+
+                    if(directionSuitable)
+                    {
+                        result.resultColor = reflectionRatio * _materials[r.materialId].mirrorReflectance * PathTrace(reflected, backfaceCulling, recursionDepth + 1).resultColor * attenuation;
+                        result.resultColor += ComputeDiffuseSpecular(r, ray);
+                        result.resultColor /= rrProb;
+                        //std::cout << _materials[r.materialId].mirrorReflectance.x << " " << _materials[r.materialId].mirrorReflectance.y << " " << _materials[r.materialId].mirrorReflectance.z << " "<< reflectionRatio <<  std::endl;
+                        result.hit = true;
+                    }
+                    else
+                    {
+                        result.resultColor = ComputeDiffuseSpecular(r, ray);
+                        result.resultColor /= rrProb;                        
+                        result.hit = true;                        
+                    }
+                        
+                }
+                else
+                {
+                    result.resultColor += reflectionRatio * _materials[r.materialId].mirrorReflectance * PathTrace(reflected, backfaceCulling, recursionDepth + 1).resultColor * attenuation;
+                    result.resultColor /= rrProb;                   
+                    result.hit = true;                    
+                }          
+                    
+            }            
+
 
         }
 
     }
+
+    if(std::isnan(result.resultColor.x) || std::isnan(result.resultColor.y) || std::isnan(result.resultColor.z))
+    {
+        result.resultColor = glm::vec3(0.0,0.0,0.0);
+    }    
 
     return result;
     

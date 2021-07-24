@@ -27,13 +27,14 @@ bool LightSphere::ShadowRayIntersection(float tmin, float tmax, float intersecti
     for(auto object : objectPointerVector)
     {
         IntersectionReport r;
-        if(object->Intersect(ray, r, tmin, tmax, intersectionTestEpsilon, backfaceCulling) && r.d < dist && (Object*)r.hitObject != this)
+        if(object->Intersect(ray, r, tmin, tmax, intersectionTestEpsilon, backfaceCulling) && r.d < dist && r.hitObject != this)
             return true;
     }
 
     return false;
 
 }          
+
 
 glm::vec3 LightSphere::ComputeDiffuseSpecular(const Ray& ray, glm::vec3& diffuseReflectance, glm::vec3& specularReflectance,
                                               const float& phongExponent, const IntersectionReport& report,
